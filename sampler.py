@@ -7,7 +7,7 @@ from sys import argv, stdout
 import time
 import threading
 import socket
-import libwinmedia as lwm
+# import libwinmedia as lwm
 import mido
 import beatclock
 
@@ -42,8 +42,8 @@ if __name__ == "__main__":
     sps /= 24 # 24 PPQN
 
     # set up audio player
-    player = lwm.Player();
-    player.open(lwm.Media("E:/Git/personal/sampler/hit.mp3"))
+    # player = lwm.Player();
+    # player.open(lwm.Media("E:/Git/personal/sampler/hit.mp3"))
 
     # set up socket to recieve clock signals
     clocksock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
