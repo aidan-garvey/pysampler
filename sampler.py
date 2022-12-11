@@ -37,8 +37,8 @@ if __name__ == "__main__":
 
         i += 1
     
-    # seconds per step
-    sps = 15 / bpm
+    # seconds per beat
+    sps = 60 / bpm
     sps /= 24 # 24 PPQN
 
     # set up audio player
@@ -53,10 +53,11 @@ if __name__ == "__main__":
     # set up midi port for clock to write to
     mido.set_backend('mido.backends.rtmidi')
     print(mido.get_output_names())
+    dest = mido.get_output_names()[1]
 
     # get thread ready to run beat clock
     clockthread = threading.Thread(target=beatclock.beatclock, name='beatclock',
-        args=(host, port, mido.open_output(), sps, max_steps), daemon=True)
+        args=(host, port, mido.open_output(dest), sps, max_steps), daemon=True)
 
     if not quiet:
         print(f'\nBPM: {bpm}\nSteps: {max_steps}\n\nPress CTRL+C to quit.\n')
@@ -67,18 +68,25 @@ if __name__ == "__main__":
         print("[]", end='')
     print("\r\x1B[?25l", end='')
 
+    sc = 0
+
     clockthread.run()
     try:
         while True:
-            print(lit_color + "[]", end='')
+            print(lit_color + "[]", end='', flush=True)
             stdout.flush()
-            step = int(str(clocksock.recv(256)))
-            print(unlit_color + "\x1b[2D[]", end='')
+            step = int(clocksock.recv(256).decode('utf-8'))
+            sc += 1
+            print(unlit_color + "\x1b[2D[]", end='', flush=True)
+            stdout.flush()
             if step == max_steps-1:
                 print("\x1B[0J\r", end='')
     except KeyboardInterrupt as kbi:
         pass
+    except Exception as e:
+        print(e)
 
     print("\x1B[0m\x1B[?25h\nExiting...")
+    print(sc)
     clocksock.close()
     exit()
