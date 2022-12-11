@@ -34,9 +34,12 @@ if __name__ == "__main__":
             i += 1
         elif opt == 'q':
             quiet = True
+
+        i += 1
     
     # seconds per step
     sps = 15 / bpm
+    sps /= 24 # 24 PPQN
 
     # set up audio player
     player = lwm.Player();
@@ -44,14 +47,19 @@ if __name__ == "__main__":
 
     # set up socket to recieve clock signals
     clocksock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    host, port = clocksock.getsockname()
+    host, port = 'localhost', 8000
+    clocksock.bind((host, port))
+
+    # set up midi port for clock to write to
+    mido.set_backend('mido.backends.rtmidi')
+    print(mido.backend.get_output_names())
 
     # get thread ready to run beat clock
     clockthread = threading.Thread(target=beatclock.beatclock, name='beatclock',
-        args=(host, port, mido.ports.BaseOutput(), sps, max_steps))
+        args=(host, port, mido.ports.BaseOutput(), sps, max_steps), daemon=True)
 
     if not quiet:
-        print(f'\nBPM: {bpm}\nSteps: {max_steps}\n\nPress CTRL+C to quit.')
+        print(f'\nBPM: {bpm}\nSteps: {max_steps}\n\nPress CTRL+C to quit.\n')
     
     # draw initial state
     print(unlit_color)
@@ -59,18 +67,22 @@ if __name__ == "__main__":
         print("[]", end='')
     print("\r\x1B[?25l", end='')
 
-    while True:
-        try:
-            for i in range(max_steps):
-                if i == 0:
-                    player.play()
+    '''
+    clockthread.run()
+    try:
+        while True:
+            step = int(str(clocksock.recv(256)))
+            print(lit_color + "[]", end='')
+            stdout.flush()
+            time.sleep(sps)
+            print(unlit_color + "\x1b[2D[]", end='')
+            if step == max_steps-1:
+                print("\x1B[0J\r", end='')
+    except KeyboardInterrupt as kbi:
+        clockthread.
 
-                print(lit_color + "[]", end='')
-                stdout.flush()
-                time.sleep(sps)
-                print(unlit_color + "\x1b[2D[]", end='')
-            print("\x1B[0J\r", end='')
-        except KeyboardInterrupt as kbi:
-            break
-    
+    '''
+
     print("\x1B[0m\x1B[?25h\nExiting...")
+    clocksock.close()
+    exit()
