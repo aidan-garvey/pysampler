@@ -70,10 +70,9 @@ if __name__ == "__main__":
     clockthread.run()
     try:
         while True:
-            step = int(str(clocksock.recv(256)))
             print(lit_color + "[]", end='')
             stdout.flush()
-            time.sleep(sps)
+            step = int(str(clocksock.recv(256)))
             print(unlit_color + "\x1b[2D[]", end='')
             if step == max_steps-1:
                 print("\x1B[0J\r", end='')
