@@ -52,11 +52,11 @@ if __name__ == "__main__":
 
     # set up midi port for clock to write to
     mido.set_backend('mido.backends.rtmidi')
-    print(mido.backend.get_output_names())
+    print(mido.get_output_names())
 
     # get thread ready to run beat clock
     clockthread = threading.Thread(target=beatclock.beatclock, name='beatclock',
-        args=(host, port, mido.ports.BaseOutput(), sps, max_steps), daemon=True)
+        args=(host, port, mido.open_output(), sps, max_steps), daemon=True)
 
     if not quiet:
         print(f'\nBPM: {bpm}\nSteps: {max_steps}\n\nPress CTRL+C to quit.\n')
@@ -67,7 +67,6 @@ if __name__ == "__main__":
         print("[]", end='')
     print("\r\x1B[?25l", end='')
 
-    '''
     clockthread.run()
     try:
         while True:
@@ -79,9 +78,7 @@ if __name__ == "__main__":
             if step == max_steps-1:
                 print("\x1B[0J\r", end='')
     except KeyboardInterrupt as kbi:
-        clockthread.
-
-    '''
+        pass
 
     print("\x1B[0m\x1B[?25h\nExiting...")
     clocksock.close()
