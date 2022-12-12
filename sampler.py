@@ -2,7 +2,8 @@
 import keyboard
 import json
 import mido
-import simpleaudio as sa
+from pydub import AudioSegment
+from pydub.playback import play
 from time import sleep
 
 from beatclock import BeatClock
@@ -43,7 +44,7 @@ class sampler:
                 break
         self.clock = BeatClock(self.sec_per_pulse, self.midiport)
         self.step = 0
-        self.test_samp = sa.WaveObject.from_wave_file("hit.wav")
+        self.test_samp = AudioSegment.from_mp3('hit.mp3')
 
     def run(self):
         self.online = True
@@ -76,7 +77,7 @@ class sampler:
 
     def play_step(self):
         if self.step % 4 == 0:
-            self.test_samp.play()
+            play(self.test_samp)
 
     # print all 16 unlit_strs
     # in_place specifies if it should overwrite the existing CLI (True) or print
