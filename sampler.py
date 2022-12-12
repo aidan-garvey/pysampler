@@ -60,12 +60,12 @@ class sampler:
         print('\x08', end='', flush=True)
         # start key
         if event.name == KEY_START:
-            self.cli_setup()
             self.step = 0
             self.clock.start()
         # stop key
         elif event.name == KEY_STOP:
             self.clock.stop()
+            self.cli_setup()
         # shutdown key
         elif event.name == KEY_SHUTDOWN:
             self.clock.stop()
