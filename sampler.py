@@ -11,6 +11,7 @@ from select import select
 HOST = 'localhost'
 BACKEND = 'mido.backends.rtmidi'
 CONFIG = json.loads(open('config.json', 'r').read())
+START_MSG = b'start'
 STOP_MSG = b'stop'
 SHUTDOWN_MSG = b'shutdown'
 
@@ -37,7 +38,9 @@ class sampler:
         self.clock = beatclock.BeatClock(self.sec_per_pulse,
             (HOST, CONFIG['port']), self.midiport)
         self.clocksock, self.clockaddr = self.server.accept()
-        self.clockthread = None
+        self.clockthread = threading.Thread(target=self.clock.run,
+                name='clock_thread', args=(), daemon=True)
+        self.clockthread.run()
     
     # listen for keys and socket messages
     def run(self):
@@ -55,17 +58,13 @@ class sampler:
     def handle_key(self, event: keyboard.KeyboardEvent):
         # backspace so pressed key doesn't show up in program
         print('\x08', end='', flush=True)
+        # start key
         if event.name == '=' or event.name == '+':
-            # if clock is not already running, start it
-            if not self.clock.started:
-                self.clockthread = threading.Thread(target=self.clock.run,
-                        name='clock_thread', args=(), daemon=True)
-                self.clockthread.run()
+            self.clocksock.send(START_MSG)
+        # stop key
         elif event.name == 'backspace':
-            # if clock is running, stop it
-            if self.clock.started:
-                self.clocksock.send(STOP_MSG)
-                self.clockthread.join()
+            self.clocksock.send(STOP_MSG)
+        # shutdown key
         elif event.name == '\\' or event.name == '|':
             print("Shutting down...", flush=True)
             self.online = False

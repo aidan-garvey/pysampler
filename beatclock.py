@@ -10,10 +10,11 @@ import mido.ports
 import mido.messages
 from select import select
 
-PPQN = 24
-PPS = PPQN // 4
+PPQN = 24 # pulses per quarter note
+PPS = PPQN // 4 # pulses per step (16th note)
 MAX_STEPS = 16
 
+START_MSG = 'start'
 STOP_MSG = 'stop'
 SHUTDOWN_MSG = 'shutdown'
 
@@ -23,7 +24,6 @@ class BeatClock:
     start_signal = mido.messages.Message(type='start')
     stop_signal = mido.messages.Message(type='stop')
     sock: socket.socket
-    started = False
     sec_per_pulse: float
     midiport: mido.ports.BaseOutput
 
@@ -36,41 +36,45 @@ class BeatClock:
         step = 0
         pulse = 0
         carry = 0.0
-        self.started = True
-        stopped = False
+        started = False
         shutdown = False
 
-        self.midiport.send(self.start_signal)
         last_time = time.time()
-        while not stopped:
+        while not shutdown:
+            # advance the clock
             curr_time = time.time()
             elapsed = curr_time - last_time + carry
             while elapsed >= self.sec_per_pulse:
-                self.midiport.send(self.clock_signal)
-                pulse += 1
-                if pulse == PPS:
-                    self.sock.send(bytes(str(step), 'utf-8'))
-                    pulse = 0
-                    step += 1
-                    step %= MAX_STEPS
                 elapsed -= self.sec_per_pulse
-
+                # only send out signal if we've been told to start
+                if started:
+                    self.midiport.send(self.clock_signal)
+                    pulse += 1
+                    if pulse == PPS:
+                        self.sock.send(bytes(str(step), 'utf-8'))
+                        pulse = 0
+                        step += 1
+                        step %= MAX_STEPS
+                        
+            # listen for messages
             readlist, _, _ = select([self.sock], [], [], 0)
             for readable in readlist:
                 msg = readable.recv(1024).decode('utf-8')
-                if msg == STOP_MSG:
-                    stopped = True
+                if msg == START_MSG:
+                    started = True
+                    self.midiport.send(self.start_signal)
+                elif msg == STOP_MSG:
+                    started = False
+                    self.midiport.send(self.stop_signal)
                 elif msg == SHUTDOWN_MSG:
-                    stopped = True
+                    started = False
+                    self.midiport.send(self.stop_signal)
                     shutdown = True
 
             carry = elapsed
             last_time = curr_time
         
-        self.started = False
-        self.midiport.send(self.stop_signal)
-        if shutdown:
-            self.shut_down()
+        self.shut_down()
 
     def shut_down(self):
         self.sock.close()
