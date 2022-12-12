@@ -54,7 +54,7 @@ class sampler:
         self.audiodev = -1
         num_outs = self.audio.get_device_count()
         for i in range(num_outs):
-            name = self.audio.get_device_info_by_index()
+            name = self.audio.get_device_info_by_index(i)
             if name.find(CONFIG['device']) >= 0:
                 self.audiodev = i
                 break
