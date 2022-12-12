@@ -67,6 +67,7 @@ class BeatClock:
             carry = elapsed
             last_time = curr_time
         
+        self.started = False
         self.midiport.send(self.stop_signal)
         if shutdown:
             self.shut_down()
