@@ -16,10 +16,11 @@ KEY_SHUTDOWN = '\\'
 
 UNLIT_COLOR = '\x1B[34m'
 LIT_COLOR = '\x1B[36m'
-
+LEFT_STR = '\x1B[2D'
+HIDE_STR = '\x1B[?25l'
+RESTORE_STR = '\x1B[0m\x1B[?25h'
 UNLIT_STR = '[]'
 LIT_STR = '()'
-LEFT_STR = '\x1B[2D'
 
 class sampler:
     sec_per_pulse: float
@@ -67,7 +68,6 @@ class sampler:
             self.clock.stop()
         # shutdown key
         elif event.name == KEY_SHUTDOWN:
-            print("Shutting down...", flush=True)
             self.clock.stop()
             self.online = False
 
@@ -77,7 +77,7 @@ class sampler:
     def cli_setup(self, in_place = True):
         if not in_place:
             print()
-        print(UNLIT_COLOR + '\r', end='')
+        print(HIDE_STR + UNLIT_COLOR + '\r', end='')
         for _ in range(MAX_STEPS):
             print(UNLIT_STR, end='')
         print('\r', end='', flush=True)
@@ -91,10 +91,15 @@ class sampler:
         print(UNLIT_COLOR + UNLIT_STR, end='')
         if self.step == 0:
             print('\r', end='')
-        print(LIT_COLOR + LIT_STR, end='', flush=True)
+        print(LIT_COLOR + LIT_STR + LEFT_STR, end='', flush=True)
 
     def shut_down(self):
         self.midiport.close()
+        self.cli_quit()
+    
+    def cli_quit(self):
+        print(RESTORE_STR)
+        print("Exiting...")
 
 if __name__ == "__main__":
     mido.set_backend(BACKEND)
