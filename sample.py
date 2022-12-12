@@ -1,6 +1,6 @@
 
 import wave
-from pyaudio import PyAudio, Stream, paContinue
+from pyaudio import PyAudio, Stream, paContinue, paComplete
 
 class Sample:
 
@@ -21,7 +21,12 @@ class Sample:
 
     # pyaudio callback for streaming sample
     def callback(self, in_data, frame_count, time_info, status):
-        return (self.sample.readframes(frame_count), paContinue)
+        flag: int
+        if frame_count <= self.sample.getnframes():
+            flag = paComplete
+        else:
+            flag = paContinue
+        return (self.sample.readframes(frame_count), flag)
     
     # play sample
     def play(self):
