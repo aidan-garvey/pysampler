@@ -52,6 +52,7 @@ class sampler:
                     print(step + 1, flush=True)
     
     def handle_key(self, event: keyboard.KeyboardEvent):
+        print('\x08', end='')
         if event.name == '=' or event.name == '+':
             self.clockthread.start()
         elif event.name == '-' or event.name == '_':
