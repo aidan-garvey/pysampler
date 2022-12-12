@@ -16,7 +16,7 @@ SHUTDOWN_MSG = b'shutdown'
 
 class sampler:
     sec_per_pulse: float
-    midiport: mido.ports.BaseOutput | None
+    midiport: mido.ports.BaseOutput
     server: socket.socket
     clock: beatclock.BeatClock
     clocksock: socket.socket
@@ -28,10 +28,10 @@ class sampler:
         self.online = True
         self.sec_per_pulse = (60 / CONFIG['bpm']) / 24
         self.midiport = None
-        # devs: list[str] = mido.get_output_names()
-        # for dev in devs:
-        #     if dev.find(CONFIG['device']) >= 0:
-        #         self.midiport = mido.open_output(dev)
+        devs: list[str] = mido.get_output_names()
+        for dev in devs:
+            if dev.find(CONFIG['device']) >= 0:
+                self.midiport = mido.open_output(dev)
         self.server = socket.create_server((HOST, CONFIG['port']))
         self.server.listen()
         self.clock = beatclock.BeatClock(self.sec_per_pulse,

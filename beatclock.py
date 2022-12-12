@@ -40,13 +40,13 @@ class BeatClock:
         stopped = False
         shutdown = False
 
-        # self.midiport.send(self.start_signal)
+        self.midiport.send(self.start_signal)
         last_time = time.time()
         while not stopped:
             curr_time = time.time()
             elapsed = curr_time - last_time + carry
             while elapsed >= self.sec_per_pulse:
-                # self.midiport.send(self.clock_signal)
+                self.midiport.send(self.clock_signal)
                 pulse += 1
                 if pulse == PPS:
                     self.sock.send(bytes(str(step), 'utf-8'))
@@ -67,10 +67,10 @@ class BeatClock:
             carry = elapsed
             last_time = curr_time
         
-        # self.midiport.send(self.stop_signal)
+        self.midiport.send(self.stop_signal)
         if shutdown:
             self.shut_down()
 
     def shut_down(self):
         self.sock.close()
-        # self.midiport.close()
+        self.midiport.close()
