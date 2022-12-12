@@ -14,6 +14,13 @@ KEY_START = '='
 KEY_STOP = keyboard.normalize_name('minus')
 KEY_SHUTDOWN = '\\'
 
+UNLIT_COLOR = '\x1B[34m'
+LIT_COLOR = '\x1B[36m'
+
+UNLIT_STR = '[]'
+LIT_STR = '()'
+LEFT_STR = '\x1B[2D'
+
 class sampler:
     sec_per_pulse: float
     sleep_time: float
@@ -37,13 +44,13 @@ class sampler:
 
     def run(self):
         self.online = True
-        print("Ready")
+        self.cli_setup(False)
         keyboard.on_press(self.handle_key)
         while self.online:
             step = self.clock.update()
             while self.step != step:
                 self.step = (self.step + 1) % MAX_STEPS
-                print(self.step)
+                self.cli_step()
             sleep(self.sleep_time)
         keyboard.unhook_all()
     
@@ -52,6 +59,8 @@ class sampler:
         print('\x08', end='', flush=True)
         # start key
         if event.name == KEY_START:
+            self.cli_setup()
+            self.step = 0
             self.clock.start()
         # stop key
         elif event.name == KEY_STOP:
@@ -62,11 +71,32 @@ class sampler:
             self.clock.stop()
             self.online = False
 
+    # print all 16 unlit_strs
+    # in_place specifies if it should overwrite the existing CLI (True) or print
+    # a new line and a new CLI (False)
+    def cli_setup(self, in_place = True):
+        if not in_place:
+            print()
+        print(UNLIT_COLOR + '\r', end='')
+        for _ in range(MAX_STEPS):
+            print(UNLIT_STR, end='')
+        print('\r', end='', flush=True)
+
+    # 1. Overwrite next two chars with unlit chars
+    # 2. If step is zero (we need to light up the first chars), print '\r'
+    # 3. Overwrite next two chars with lit chars
+    # 4. Move cursor left by two
+    # 5. Flush output buffer
+    def cli_step(self):
+        print(UNLIT_COLOR + UNLIT_STR, end='')
+        if self.step == 0:
+            print('\r', end='')
+        print(LIT_COLOR + LIT_STR, end='', flush=True)
+
     def shut_down(self):
         self.midiport.close()
 
 if __name__ == "__main__":
-    print("Starting...")
     mido.set_backend(BACKEND)
     s = sampler()
     try:
