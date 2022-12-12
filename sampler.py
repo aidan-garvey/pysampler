@@ -10,6 +10,10 @@ BACKEND = 'mido.backends.rtmidi'
 CONFIG: dict = json.loads(open('config.json', 'r').read())
 MAX_STEPS = 16
 
+KEY_START = '='
+KEY_STOP = keyboard.normalize_name('minus')
+KEY_SHUTDOWN = '\\'
+
 class sampler:
     sec_per_pulse: float
     sleep_time: float
@@ -46,17 +50,16 @@ class sampler:
     def handle_key(self, event: keyboard.KeyboardEvent):
         # backspace so pressed key doesn't show up in program
         print('\x08', end='', flush=True)
-        # debug: print key
-        print(event.name, flush=True)
         # start key
-        if event.name == '=' or event.name == '+':
+        if event.name == KEY_START:
             self.clock.start()
         # stop key
-        elif event.name == 'backspace' or event.name == '-' or event.name == '_':
+        elif event.name == KEY_STOP:
             self.clock.stop()
         # shutdown key
-        elif event.name == '\\' or event.name == '|':
+        elif event.name == KEY_SHUTDOWN:
             print("Shutting down...", flush=True)
+            self.clock.stop()
             self.online = False
 
     def shut_down(self):
