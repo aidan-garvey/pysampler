@@ -2,8 +2,9 @@
 import keyboard
 import json
 import mido
-from pydub import AudioSegment
-from pydub.playback import play
+import wave
+import pyaudio
+from pyaudio import PyAudio
 from time import sleep
 
 from beatclock import BeatClock
@@ -25,9 +26,11 @@ UNLIT_STR = '[]'
 LIT_STR = '()'
 
 class sampler:
+    audio = PyAudio()
     sec_per_pulse: float
     sleep_time: float
     midiport: mido.ports.BaseOutput
+    audiodev: int
     clock: BeatClock
     step: int
     online: bool
@@ -36,15 +39,40 @@ class sampler:
         self.online = True
         self.sec_per_pulse = (60 / CONFIG['bpm']) / 24
         self.sleep_time = self.sec_per_pulse / 2
+
         self.midiport = None
         devs: list[str] = mido.get_output_names()
         for dev in devs:
             if dev.find(CONFIG['device']) >= 0:
                 self.midiport = mido.open_output(dev)
                 break
+        
+        if self.midiport is None:
+            print("Error: could not find MIDI device")
+            exit()
+
+        self.audiodev = -1
+        num_outs = self.audio.get_device_count()
+        for i in range(num_outs):
+            name = self.audio.get_device_info_by_index()
+            if name.find(CONFIG['device']) >= 0:
+                self.audiodev = i
+                break
+        
+        if self.audiodev < 0:
+            print("Error: could not find audio output device")
+            exit()
+
         self.clock = BeatClock(self.sec_per_pulse, self.midiport)
         self.step = 0
-        self.test_samp = AudioSegment.from_mp3('hit.mp3')
+        self.test_samp = wave.open('hit.wav', 'rb')
+        self.test_stream = self.audio.open(
+            format=self.audio.get_format_from_width(self.test_samp.getsampwidth()),
+            channels=self.test_samp.getnchannels(),
+            rate=self.test_samp.getframerate(),
+            output=True,
+            output_device_device_index=self.audiodev,
+            stream_callback=self.sample_callback)
 
     def run(self):
         self.online = True
@@ -76,8 +104,12 @@ class sampler:
             self.online = False
 
     def play_step(self):
-        if self.step % 4 == 0:
-            play(self.test_samp)
+        if self.step == MAX_STEPS-1:
+            self.test_stream.start_stream()
+
+    def sample_callback(self, in_data, frame_count, time_info, status):
+        data = self.test_samp.readframes(frame_count)
+        return (data, pyaudio.paContinue)
 
     # print all 16 unlit_strs
     # in_place specifies if it should overwrite the existing CLI (True) or print
