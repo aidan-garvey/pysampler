@@ -71,7 +71,7 @@ class sampler:
             channels=self.test_samp.getnchannels(),
             rate=self.test_samp.getframerate(),
             output=True,
-            output_device_device_index=self.audiodev,
+            output_device_index=self.audiodev,
             stream_callback=self.sample_callback)
 
     def run(self):
