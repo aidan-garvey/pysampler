@@ -11,10 +11,10 @@ class Sample:
     stream: Stream
 
     # prepare sample to play
-    def __init__(self, audio: PyAudio, filename: str, devindex: int):
+    def __init__(self, audio: PyAudio, filename: str, device: int):
         self.filename = filename
         self.audio = audio
-        self.device = devindex
+        self.device = device
         self.sample = wave.open(filename, 'rb')
         self.stream = audio.open(
             format=audio.get_format_from_width(self.sample.getsampwidth()),
@@ -22,7 +22,7 @@ class Sample:
             rate=self.sample.getframerate(),
             output=True,
             start=False,
-            output_device_index=devindex,
+            output_device_index=device,
             stream_callback=self.callback)
 
     # pyaudio callback for streaming sample
@@ -48,6 +48,6 @@ class Sample:
             rate=self.sample.getframerate(),
             output=True,
             start=True,
-            output_device_index=self.devindex,
+            output_device_index=self.device,
             stream_callback=self.callback)
         
