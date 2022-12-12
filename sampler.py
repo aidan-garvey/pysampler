@@ -2,6 +2,7 @@
 import keyboard
 import json
 import mido
+import simpleaudio as sa
 from time import sleep
 
 from beatclock import BeatClock
@@ -42,6 +43,7 @@ class sampler:
                 break
         self.clock = BeatClock(self.sec_per_pulse, self.midiport)
         self.step = 0
+        self.test_samp = sa.WaveObject.from_wave_file("hit.wav")
 
     def run(self):
         self.online = True
@@ -51,6 +53,7 @@ class sampler:
             step = self.clock.update()
             while self.step != step:
                 self.step = (self.step + 1) % MAX_STEPS
+                self.play_step()
                 self.cli_step()
             sleep(self.sleep_time)
         keyboard.unhook_all()
@@ -70,6 +73,10 @@ class sampler:
         elif event.name == KEY_SHUTDOWN:
             self.clock.stop()
             self.online = False
+
+    def play_step(self):
+        if self.step % 4 == 0:
+            self.test_samp.play()
 
     # print all 16 unlit_strs
     # in_place specifies if it should overwrite the existing CLI (True) or print
