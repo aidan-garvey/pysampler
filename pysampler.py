@@ -8,6 +8,7 @@ from pyaudio import PyAudio
 from time import sleep
 
 from beatclock import BeatClock
+from sample import Sample
 
 BACKEND = 'mido.backends.rtmidi'
 CONFIG: dict = json.loads(open('config.json', 'r').read())
@@ -65,15 +66,7 @@ class sampler:
 
         self.clock = BeatClock(self.sec_per_pulse, self.midiport)
         self.step = 0
-        self.test_samp = wave.open('hit.wav', 'rb')
-        self.test_stream = self.audio.open(
-            format=self.audio.get_format_from_width(self.test_samp.getsampwidth()),
-            channels=self.test_samp.getnchannels(),
-            rate=self.test_samp.getframerate(),
-            output=True,
-            start=False,
-            output_device_index=self.audiodev,
-            stream_callback=self.sample_callback)
+        self.test_samp = Sample(self.audio, 'hit.wav', self.audiodev)
 
     def run(self):
         self.online = True
@@ -105,8 +98,8 @@ class sampler:
             self.online = False
 
     def play_step(self):
-        if self.step == MAX_STEPS-1:
-            self.test_stream.start_stream()
+        if self.step == 0:
+            self.test_samp.play()
 
     def sample_callback(self, in_data, frame_count, time_info, status):
         data = self.test_samp.readframes(frame_count)
@@ -136,6 +129,7 @@ class sampler:
 
     def shut_down(self):
         self.midiport.close()
+        self.audio.terminate()
         self.cli_quit()
     
     def cli_quit(self):
