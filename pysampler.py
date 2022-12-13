@@ -87,10 +87,12 @@ class sampler:
         if self.audiodev < 0:
             print("Error: could not find audio output device")
             exit()
+        else:
+            print("Using audio device",
+                    self.audio.get_device_info_by_index(self.audiodev)['name'])
 
         self.clock = BeatClock(self.sec_per_pulse, self.midiport)
         self.step = 0
-        self.test_samp = Sample(self.audio, 'hit.wav', self.audiodev)
 
         if preload is not None:
             preset: dict = json.loads(open(preload, 'r').read())
@@ -160,10 +162,6 @@ class sampler:
             self.fill2[0].play()
         if self.pattern[self.step] is not None:
             self.pattern[self.step].play()
-
-    def sample_callback(self, in_data, frame_count, time_info, status):
-        data = self.test_samp.readframes(frame_count)
-        return (data, pyaudio.paContinue)
 
     # print all 16 unlit_strs
     # in_place specifies if it should overwrite the existing CLI (True) or print
