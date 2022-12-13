@@ -2,13 +2,12 @@
 import keyboard
 import json
 import mido
-import pyaudio
+from samplestream import SampleStream
 from pyaudio import PyAudio
 from time import sleep
 from sys import argv
 
 from beatclock import BeatClock
-from sample import Sample
 
 BACKEND = 'mido.backends.rtmidi'
 CONFIG: dict = json.loads(open('config.json', 'r').read())
@@ -37,9 +36,10 @@ class sampler:
     clock: BeatClock
     step: int
     online: bool
+    stream: SampleStream
 
     # list of samples in current pattern
-    pattern: list[Sample] = [None] * MAX_STEPS
+    pattern: list[str] = [None] * MAX_STEPS
 
     # can be replaced with a tuple (sample, x) where sample is played every x
     # steps if enabled
@@ -50,7 +50,7 @@ class sampler:
     fill2_on = False
 
     # keys mapped to samples played upon pressing them
-    taps: dict[str, Sample] = {
+    taps: dict[str, str] = {
         'z': None,
         'x': None,
         'c': None,
@@ -91,6 +91,7 @@ class sampler:
             print("Using audio device",
                     self.audio.get_device_info_by_index(self.audiodev)['name'])
 
+        self.stream = SampleStream(self.audio, self.audiodev)
         self.clock = BeatClock(self.sec_per_pulse, self.midiport)
         self.step = 0
 
@@ -98,24 +99,20 @@ class sampler:
             preset: dict = json.loads(open(preload, 'r').read())
 
             if preset.get('pattern') is not None:
-                ptn = preset['pattern']
+                ptn: str = preset['pattern']
                 for i in range(min(MAX_STEPS, len(ptn))):
-                    self.pattern[i] = Sample(self.audio, ptn[i], self.audiodev)
+                    self.pattern[i] = ptn[i]
 
             if preset.get('fill1') is not None:
-                fsamp = Sample(self.audio, preset['fill1'][0], self.audiodev)
-                self.fill1 = (fsamp, preset['fill1'][1])
+                self.fill1 = (preset['fill1'][0], preset['fill1'][1])
 
             if preset.get('fill2') is not None:
-                fsamp = Sample(self.audio, preset['fill2'][0], self.audiodev)
-                self.fill2 = (fsamp, preset['fill2'][1])
+                self.fill2 = (preset['fill2'][0], preset['fill2'][1])
 
             if preset.get('taps') is not None:
-                taps = preset['taps']
+                taps: dict[str, str] = preset['taps']
                 for key in self.taps.keys():
-                    if taps.get(key) is not None:
-                        self.taps[key] = Sample(self.audio, taps.get(key),
-                                self.audiodev)
+                    self.taps[key] = taps.get(key)
 
     def run(self):
         self.online = True
@@ -135,7 +132,7 @@ class sampler:
         print('\x08', end='', flush=True)
         # play tap sample
         if self.taps.get(event.name) is not None:
-            self.taps[event.name].play()
+            self.stream.play(self.taps[event.name])
         # toggle fill 1
         elif event.name == KEY_FILL1:
             self.fill1_on = not self.fill1_on
@@ -158,12 +155,14 @@ class sampler:
     def play_step(self):
         if self.fill1_on and self.fill1 is not None \
                 and self.step % self.fill1[1] == 0:
-            self.fill1[0].play()
+            self.stream.play(self.fill1[0])
+        
         if self.fill2_on and self.fill2 is not None \
                 and self.step % self.fill2[1] == 0:
-            self.fill2[0].play()
+            self.stream.play(self.fill2[0])
+        
         if self.pattern[self.step] is not None:
-            self.pattern[self.step].play()
+            self.stream.play(self.pattern[self.step])
 
     # print all 16 unlit_strs
     # in_place specifies if it should overwrite the existing CLI (True) or print
