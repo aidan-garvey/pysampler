@@ -13,6 +13,8 @@ class SampleStream:
     stream: Stream
     # wave files currently playing
     samples: set[wave.Wave_read]
+    # wave files we need to add to samples
+    queued_samples: set[wave.Wave_read]
 
     # initialize stream connected to device
     def __init__(self, audio: PyAudio, device: int):
@@ -25,11 +27,16 @@ class SampleStream:
             output_device_index=device,
             stream_callback=self.callback)
         self.samples = set()
+        self.queued_samples = set()
     
     def play(self, filename):
-        self.samples.add(wave.open(filename, 'rb'))
+        self.queued_samples.add(wave.open(filename, 'rb'))
     
     def callback(self, in_data, frame_count, time_info, status):
+        # add any queued samples
+        self.samples.update(self.queued_samples)
+        self.queued_samples.clear()
+
         # at most frame_count frames from each wave will be converted to ints
         buffs: list[array[int]] = []
         # final result

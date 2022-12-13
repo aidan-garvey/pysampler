@@ -37,3 +37,21 @@ slot
     thus its callback can have the appropriate signature
 * find the lowest sample rate that still sounds good, so the least slowdown
 possible occurs
+
+* T-8 has 2 channels (i.e. 1 stereo input)
+* Allegedly, to merge multiple waveforms, you just add together the bytes
+    * According to some guy, it only works for PCM 16, but that's what we're
+    using anyway
+    * All of our samples play at the same rate (44100 Hz)
+* the wav files are RIFF (little-endian), each frame is 4 bytes (2*2 channels)
+* for every pair of bytes, convert to a 16-bit integer, first byte is low-order
+
+# sampleStreamer class
+* has one Stream
+* has multiple Wave_reads in a Set
+* continuously streams audio to output device
+* when pysampler tells it to "play" a sample, it adds it to its set of waves
+* each time the callback is called, it reads the req. num. frames from all waves
+    in its set, adds them together into one array of bytes
+    * each of the Wave_reads whose frames are exhaused by this gets closed and
+        removed from the set
