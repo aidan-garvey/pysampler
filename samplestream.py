@@ -16,14 +16,14 @@ class SampleStream:
 
     # initialize stream connected to device
     def __init__(self, audio: PyAudio, device: int):
-        '''self.stream = audio.open(
+        self.stream = audio.open(
             format=audio.get_format_from_width(BYTE_WIDTH),
             channels=CHANNELS,
             rate=RATE,
             output=True,
             start=True,
             output_device_index=device,
-            stream_callback=self.callback)'''
+            stream_callback=self.callback)
         self.samples = set()
     
     def play(self, filename):
