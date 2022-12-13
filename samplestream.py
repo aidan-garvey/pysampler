@@ -30,50 +30,38 @@ class SampleStream:
         self.samples.add(wave.open(filename, 'rb'))
     
     def callback(self, in_data, frame_count, time_info, status):
+        # at most frame_count frames from each wave will be converted to ints
         buffs: list[array[int]] = []
+        # final result
+        result = array('h', b'\0' * frame_count * FRAME_WIDTH)
+        # we will remove completed streams from the set later
         to_remove = set()
+
         # read frame_count frames from each sample, convert to 16-bit ints
-        max_frames = 0  # longest buffer
-        max_buff = 0    # index of buffer with max_frames
-        curr_buff = 0   # index of buffer being appended
+        num_buffs = 0 # count number of buffers
         for wave in self.samples:
             # read frames
             wbytes = wave.readframes(frame_count)
-            frames_read = len(wbytes) / FRAME_WIDTH
 
             # if we've read all frames, don't include in buffs, remove later
-            if frames_read == 0:
+            if len(wbytes) == 0:
                 to_remove.add(wave)
                 continue
-            # track largest number of frames read
-            elif frames_read > max_frames:
-                max_frames = frames_read
-                max_buff = curr_buff
 
             # convert to array of 16-bit signed integers
             buffs.append(array('h', wbytes))
-
-            curr_buff += 1
+            num_buffs += 1
         
         # remove unneeded buffers
         for wave in to_remove:
             wave.close()
             self.samples.remove(wave)
 
-        # if we didn't add any buffers to buffs, return no bytes
-        if curr_buff == 0:
-            return (b'', paContinue)
-
-        # average contents of all samples into the longest buffer
-        # life hack: curr_buff is now the number of buffers
-        for i in range(len(buffs[max_buff])):
-            buffs[max_buff][i] //= curr_buff
-
-        for i in range(curr_buff):
-            if i != max_buff:
-                curr = buffs[i]
-                for j in range(len(curr)):
-                    buffs[max_buff][j] += (curr[j] // curr_buff)
+        # average contents of all samples into result
+        for i in range(num_buffs):
+            curr = buffs[i]
+            for j in range(len(curr)):
+                result[j] += curr[j] // num_buffs
         
-        # convert buffer we added to back into bytes and return it
-        return (buffs[max_buff].tobytes(), paContinue)
+        # convert buffer back into bytes and return it
+        return (result.tobytes(), paContinue)
