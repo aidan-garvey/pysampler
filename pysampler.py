@@ -39,7 +39,7 @@ class sampler:
     online: bool
 
     # list of samples in current pattern
-    pattern = [None] * MAX_STEPS
+    pattern: list[Sample] = [None] * MAX_STEPS
 
     # can be replaced with a tuple (sample, x) where sample is played every x
     # steps if enabled
@@ -152,8 +152,14 @@ class sampler:
             self.online = False
 
     def play_step(self):
-        if self.step == 0:
-            self.test_samp.play()
+        if self.fill1_on and self.fill1 is not None \
+                and self.step % self.fill1[1] == 0:
+            self.fill1[0].play()
+        if self.fill2_on and self.fill2 is not None \
+                and self.step % self.fill2[1] == 0:
+            self.fill2[0].play()
+        if self.pattern[self.step] is not None:
+            self.pattern[self.step].play()
 
     def sample_callback(self, in_data, frame_count, time_info, status):
         data = self.test_samp.readframes(frame_count)

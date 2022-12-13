@@ -1,0 +1,11 @@
+{
+    "pattern": [],
+    "fill1": ["rimshot-3.wav", 1],
+    "fill2": ["cymbal-1.wav", 4],
+    "taps": {
+        "z": "rimshot-1.wav",
+        "x":"rimshot-3.wav",
+        "c":"kick-1.wav",
+        "v":"cymbal-1.wav"
+    }
+}
