@@ -113,8 +113,9 @@ class sampler:
             if preset.get('taps') is not None:
                 taps = preset['taps']
                 for key in self.taps.keys():
-                    self.taps[key] = Sample(self.audio, taps.get(key),
-                            self.audiodev)
+                    if taps.get(key) is not None:
+                        self.taps[key] = Sample(self.audio, taps.get(key),
+                                self.audiodev)
 
     def run(self):
         self.online = True
