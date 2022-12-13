@@ -29,18 +29,18 @@ class Sample:
     
     # play sample
     def play(self):
-        if self.stream is not None and not self.stream.is_stopped():
-            self.stream.stop_stream()
-        self.stream.close()
+        if self.stream is not None:
+            if not self.stream.is_stopped():
+                self.stream.stop_stream()
+            self.stream.close()
         self.sample.close()
         self.sample = wave.open(self.filename, 'rb')
-        # note start=True: the stream will start immediately
         self.stream = self.audio.open(
             format=self.audio.get_format_from_width(self.sample.getsampwidth()),
             channels=self.sample.getnchannels(),
             rate=self.sample.getframerate(),
             output=True,
-            start=True,
+            start=True, # stream will start immediately
             output_device_index=self.device,
             stream_callback=self.callback)
         
