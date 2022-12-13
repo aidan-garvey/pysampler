@@ -16,14 +16,7 @@ class Sample:
         self.audio = audio
         self.device = device
         self.sample = wave.open(filename, 'rb')
-        self.stream = audio.open(
-            format=audio.get_format_from_width(self.sample.getsampwidth()),
-            channels=self.sample.getnchannels(),
-            rate=self.sample.getframerate(),
-            output=True,
-            start=False,
-            output_device_index=device,
-            stream_callback=self.callback)
+        self.stream = None
 
     # pyaudio callback for streaming sample
     def callback(self, in_data, frame_count, time_info, status):
@@ -36,7 +29,7 @@ class Sample:
     
     # play sample
     def play(self):
-        if not self.stream.is_stopped():
+        if self.stream is not None and not self.stream.is_stopped():
             self.stream.stop_stream()
         self.stream.close()
         self.sample.close()
