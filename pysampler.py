@@ -2,10 +2,10 @@
 import keyboard
 import json
 import mido
-import wave
 import pyaudio
 from pyaudio import PyAudio
 from time import sleep
+from sys import argv
 
 from beatclock import BeatClock
 from sample import Sample
@@ -17,6 +17,8 @@ MAX_STEPS = 16
 KEY_START = '='
 KEY_STOP = keyboard.normalize_name('minus')
 KEY_SHUTDOWN = '\\'
+KEY_FILL1 = ';'
+KEY_FILL2 = '\''
 
 UNLIT_COLOR = '\x1B[34m'
 LIT_COLOR = '\x1B[36m'
@@ -36,7 +38,29 @@ class sampler:
     step: int
     online: bool
 
-    def __init__(self):
+    # list of samples in current pattern
+    pattern = [None] * MAX_STEPS
+
+    # can be replaced with a tuple (sample, x) where sample is played every x
+    # steps if enabled
+    fill1 = None
+    fill2 = None
+    # enable/disable fill1 and fill2
+    fill1_on = False
+    fill2_on = False
+
+    # keys mapped to samples played upon pressing them
+    taps: dict[str, Sample] = {
+        'z': None,
+        'x': None,
+        'c': None,
+        'v': None,
+        'b': None,
+        'n': None,
+        'm': None
+    }
+
+    def __init__(self, preload = None):
         self.online = True
         self.sec_per_pulse = (60 / CONFIG['bpm']) / 24
         self.sleep_time = self.sec_per_pulse / 2
@@ -68,6 +92,27 @@ class sampler:
         self.step = 0
         self.test_samp = Sample(self.audio, 'hit.wav', self.audiodev)
 
+        if preload is not None:
+            preset: dict = json.loads(open(preload, 'r').read())
+
+            if preset.get('pattern') is not None:
+                ptn = preset['pattern']
+                for i in range(min(MAX_STEPS, len(ptn))):
+                    self.pattern[i] = Sample(self.audio, ptn[i], self.audiodev)
+
+            if preset.get('fill1') is not None:
+                fsamp = Sample(self.audio, preset['fill1'][0], self.audiodev)
+                self.fill1 = (fsamp, preset['fill1'][1])
+
+            if preset.get('fill2') is not None:
+                fsamp = Sample(self.audio, preset['fill2'][0], self.audiodev)
+                self.fill2 = (fsamp, preset['fill2'][1])
+
+            if preset.get('taps') is not None:
+                taps = preset['taps']
+                for key in self.taps.keys():
+                    self.taps[key] = taps.get(key)
+
     def run(self):
         self.online = True
         self.cli_setup(False)
@@ -75,8 +120,8 @@ class sampler:
         while self.online:
             step = self.clock.update()
             while self.step != step:
-                self.step = (self.step + 1) % MAX_STEPS
                 self.play_step()
+                self.step = (self.step + 1) % MAX_STEPS
                 self.cli_step()
             sleep(self.sleep_time)
         keyboard.unhook_all()
@@ -84,8 +129,17 @@ class sampler:
     def handle_key(self, event: keyboard.KeyboardEvent):
         # backspace so pressed key doesn't show up in program
         print('\x08', end='', flush=True)
+        # play tap sample
+        if self.taps.get(event.name) is not None:
+            self.taps[event.name].play()
+        # toggle fill 1
+        elif event.name == KEY_FILL1:
+            self.fill1_on = not self.fill1_on
+        # toggle fill 2
+        elif event.name == KEY_FILL2:
+            self.fill2_on = not self.fill2_on
         # start key
-        if event.name == KEY_START:
+        elif event.name == KEY_START:
             self.step = 0
             self.clock.start()
         # stop key
@@ -138,7 +192,12 @@ class sampler:
 
 if __name__ == "__main__":
     mido.set_backend(BACKEND)
-    s = sampler()
+    s: sampler
+    if len(argv) > 1:
+        s = sampler(argv[1])
+    else:
+        s = sampler()
+    
     try:
         s.run()
     except Exception as e:
