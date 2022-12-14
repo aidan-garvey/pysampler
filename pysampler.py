@@ -192,36 +192,36 @@ class sampler:
     # in_place specifies if it should overwrite the existing CLI (True) or print
     # a new line and a new CLI (False)
     def cli_setup(self):
-        print(HIDE_CURSOR, CLI_TOP, end=None)
+        print(HIDE_CURSOR, CLI_TOP, end='')
 
         for i in range(len(self.pattern) // 2):
             if self.pattern[i] is not None:
-                print(COLOR_HAS_SAMP, end=None)
+                print(COLOR_HAS_SAMP, end='')
             else:
-                print(COLOR_NO_SAMP, end=None)
-            print(CLI_STEPS_1[i], end=None)
-        print(COLOR_DEFAULT + CLI_ADD, end=None)
+                print(COLOR_NO_SAMP, end='')
+            print(CLI_STEPS_1[i], end='')
+        print(COLOR_DEFAULT + CLI_ADD, end='')
 
         for i in range(len(self.pattern) // 2):
             j = i + len(self.pattern) // 2
             if self.pattern[j] is not None:
-                print(COLOR_HAS_SAMP, end=None)
+                print(COLOR_HAS_SAMP, end='')
             else:
-                print(COLOR_NO_SAMP, end=None)
-            print(CLI_STEPS_2[i], end=None)
-        print(COLOR_DEFAULT + CLI_REMOVE, end=None)
+                print(COLOR_NO_SAMP, end='')
+            print(CLI_STEPS_2[i], end='')
+        print(COLOR_DEFAULT + CLI_REMOVE, end='')
 
         if self.fill1 is not None:
             file = self.cli_filename(self.fill1)
-            print(COLOR_FILL_OFF + CLI_FILLS[0] + COLOR_DEFAULT + file, end=None)
+            print(COLOR_FILL_OFF + CLI_FILLS[0] + COLOR_DEFAULT + file, end='')
         else:
-            print(COLOR_NO_SAMP + CLI_FILLS[0] + COLOR_DEFAULT + CLI_EMPTY_FILE, end=None)
+            print(COLOR_NO_SAMP + CLI_FILLS[0] + COLOR_DEFAULT + CLI_EMPTY_FILE, end='')
         
         if self.fill2 is not None:
             file = self.cli_filename(self.fill2)
-            print(COLOR_FILL_OFF + CLI_FILLS[1] + COLOR_DEFAULT + file, end=None)
+            print(COLOR_FILL_OFF + CLI_FILLS[1] + COLOR_DEFAULT + file, end='')
         else:
-            print(COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + CLI_EMPTY_FILE, end=None)
+            print(COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + CLI_EMPTY_FILE, end='')
         print(COLOR_DEFAULT + CLI_FILLS[2])
 
     # truncate filename to 16 chars / pad to 16 chars with trailing spaces
