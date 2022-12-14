@@ -43,7 +43,7 @@ CLI_REMOVE = "    [D] Delete from pattern\n\n "
 CLI_FILLS = ['[:]', '["]', ' [F] Change\n\n']
 CLI_TAP_KEYS = ['z', 'b', 'x', 'n', 'c', 'm', 'v']
 CLI_TAPS = {f'{x}' : f'[{x.upper()}]' for x in CLI_TAP_KEYS}
-CLI_ARROWS = ['[<] ', ' [>]']
+CLI_ARROWS = [' [<] ', ' [>]']
 CLI_EMPTY_FILE = '.' * 16
 
 HIDE_CURSOR = '\x1B[25l'
@@ -235,7 +235,7 @@ class sampler:
             if ti % 2 == 1:
                 print()
         
-        print(CLI_ARROWS[0] + '000/000' + CLI_ARROWS[1] + '\n\n >\n')
+        print(CLI_ARROWS[0] + '000/000' + CLI_ARROWS[1] + '\n\n\n\x1B[1A > ', end='')
 
     # truncate filename to 16 chars / pad to 16 chars with trailing spaces
     def cli_filename(self, name: str) -> str:
@@ -243,7 +243,7 @@ class sampler:
         if l == 16:
             return name
         elif l > 16:
-            return name[0:16]
+            return name[0:15] + '~'
         else:
             return name.ljust(16)
 
