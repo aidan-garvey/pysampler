@@ -37,7 +37,7 @@ KEY_FILL2 = '\''
 '''
 CLI_TOP = "\n [-] Stop    [+] Start    [\] Shut Down\n\n "
 CLI_STEPS_1 = [f'[{x}]' for x in range(1, 9)]
-CLI_STEPS_2 = [f'[{x}]' for x in ['Q', 'W', 'E', 'R', 'T', 'Y']]
+CLI_STEPS_2 = [f'[{x}]' for x in ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I']]
 CLI_ADD = "     [A] Add to pattern\n  "
 CLI_REMOVE = "    [D] Delete from pattern\n\n "
 CLI_FILLS = ['[:] ', ' ["] ', ' [F] Change\n\n ']
