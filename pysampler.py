@@ -19,13 +19,39 @@ KEY_SHUTDOWN = '\\'
 KEY_FILL1 = ';'
 KEY_FILL2 = '\''
 
-UNLIT_COLOR = '\x1B[34m'
-LIT_COLOR = '\x1B[36m'
-LEFT_STR = '\x1B[2D'
-HIDE_STR = '\x1B[?25l'
-RESTORE_STR = '\x1B[0m\x1B[?25h'
-UNLIT_STR = '[]'
-LIT_STR = '()'
+# these strings are used to generate the following CLI:
+'''
+[-] Stop    [+] Start    [\] Shut Down
+
+        [1][2][3][4][5][6][7][8]     [A] Add to pattern
+         [Q][W][E][R][T][Y][U][I]    [D] Delete from pattern
+
+        [:] ................ ["] ................ [F] Change
+
+        [Z] ................ [B] ................
+        [X] ................ [N] ................
+        [C] ................ [M] ................
+        [V] ................ [<] pg./pgs [>]
+
+        >
+'''
+CLI_TOP = "\n [-] Stop    [+] Start    [\] Shut Down\n\n "
+CLI_STEPS_1 = [f'[{x}]' for x in range(1, 9)]
+CLI_STEPS_2 = [f'[{x}]' for x in ['Q', 'W', 'E', 'R', 'T', 'Y']]
+CLI_ADD = "     [A] Add to pattern\n  "
+CLI_REMOVE = "    [D] Delete from pattern\n\n "
+CLI_FILLS = ['[:] ', ' ["] ', ' [F] Change\n\n ']
+CLI_TAPS = [f'[{x}]' for x in ['Z', 'B', 'X', 'N', 'C', 'M', 'V']]
+CLI_ARROWS = ['[<] ', ' [>]']
+CLI_EMPTY_FILE = '.' * 16
+
+HIDE_CURSOR = '\x1B[25l'
+RESTORE_CURSOR = '\x1B[25h'
+COLOR_DEFAULT = '\x1B[0m'
+COLOR_NO_SAMP = '\x1B[33;40m'
+COLOR_HAS_SAMP = '\x1B[30;43m'
+COLOR_FILL_ON = '\x1B[30;46m'
+COLOR_FILL_OFF = '\x1B[30;41m'
 
 class sampler:
     audio = PyAudio()
@@ -116,14 +142,13 @@ class sampler:
 
     def run(self):
         self.online = True
-        self.cli_setup(False)
+        self.cli_setup()
         keyboard.on_press(self.handle_key)
         while self.online:
             step = self.clock.update()
             while self.step != step:
                 self.play_step()
                 self.step = (self.step + 1) % MAX_STEPS
-                self.cli_step()
             sleep(self.sleep_time)
         keyboard.unhook_all()
     
@@ -146,7 +171,6 @@ class sampler:
         # stop key
         elif event.name == KEY_STOP:
             self.clock.stop()
-            self.cli_setup()
         # shutdown key
         elif event.name == KEY_SHUTDOWN:
             self.clock.stop()
@@ -167,24 +191,48 @@ class sampler:
     # print all 16 unlit_strs
     # in_place specifies if it should overwrite the existing CLI (True) or print
     # a new line and a new CLI (False)
-    def cli_setup(self, in_place = True):
-        if not in_place:
-            print()
-        print(HIDE_STR + UNLIT_COLOR + '\r', end='')
-        for _ in range(MAX_STEPS):
-            print(UNLIT_STR, end='')
-        print('\r', end='', flush=True)
+    def cli_setup(self):
+        print(HIDE_CURSOR, CLI_TOP, end=None)
 
-    # 1. Overwrite next two chars with unlit chars
-    # 2. If step is zero (we need to light up the first chars), print '\r'
-    # 3. Overwrite next two chars with lit chars
-    # 4. Move cursor left by two
-    # 5. Flush output buffer
-    def cli_step(self):
-        print(UNLIT_COLOR + UNLIT_STR, end='')
-        if self.step == 0:
-            print('\r', end='')
-        print(LIT_COLOR + LIT_STR + LEFT_STR, end='', flush=True)
+        for i in range(len(self.pattern) // 2):
+            if self.pattern[i] is not None:
+                print(COLOR_HAS_SAMP, end=None)
+            else:
+                print(COLOR_NO_SAMP, end=None)
+            print(CLI_STEPS_1[i], end=None)
+        print(COLOR_DEFAULT + CLI_ADD, end=None)
+
+        for i in range(len(self.pattern) // 2):
+            j = i + len(self.pattern) // 2
+            if self.pattern[j] is not None:
+                print(COLOR_HAS_SAMP, end=None)
+            else:
+                print(COLOR_NO_SAMP, end=None)
+            print(CLI_STEPS_2[i], end=None)
+        print(COLOR_DEFAULT + CLI_REMOVE, end=None)
+
+        if self.fill1 is not None:
+            file = self.cli_filename(self.fill1)
+            print(COLOR_FILL_OFF + CLI_FILLS[0] + COLOR_DEFAULT + file, end=None)
+        else:
+            print(COLOR_NO_SAMP + CLI_FILLS[0] + COLOR_DEFAULT + CLI_EMPTY_FILE, end=None)
+        
+        if self.fill2 is not None:
+            file = self.cli_filename(self.fill2)
+            print(COLOR_FILL_OFF + CLI_FILLS[1] + COLOR_DEFAULT + file, end=None)
+        else:
+            print(COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + CLI_EMPTY_FILE, end=None)
+        print(COLOR_DEFAULT + CLI_FILLS[2])
+
+    # truncate filename to 16 chars / pad to 16 chars with trailing spaces
+    def cli_filename(self, name: str) -> str:
+        l = len(name)
+        if l == 16:
+            return name
+        elif l > 16:
+            return name[0:16]
+        else:
+            return name.ljust(16)
 
     def shut_down(self):
         self.midiport.close()
@@ -192,7 +240,7 @@ class sampler:
         self.cli_quit()
     
     def cli_quit(self):
-        print(RESTORE_STR)
+        print(RESTORE_CURSOR)
         print("Exiting...")
 
 if __name__ == "__main__":
