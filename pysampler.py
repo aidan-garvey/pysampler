@@ -2,12 +2,12 @@
 import keyboard
 import json
 import mido
-from samplestream import SampleStream
 from pyaudio import PyAudio
 from time import sleep
 from sys import argv
 
 from beatclock import BeatClock
+from samplestream import SampleStream
 
 BACKEND = 'mido.backends.rtmidi'
 CONFIG: dict = json.loads(open('config.json', 'r').read())
@@ -54,7 +54,7 @@ COLOR_HAS_SAMP = '\x1B[30;43m'
 COLOR_FILL_ON = '\x1B[30;46m'
 COLOR_FILL_OFF = '\x1B[30;41m'
 
-class sampler:
+class PySampler:
     audio = PyAudio()
     sec_per_pulse: float
     sleep_time: float
@@ -189,9 +189,7 @@ class sampler:
         if self.pattern[self.step] is not None:
             self.stream.play(self.pattern[self.step])
 
-    # print all 16 unlit_strs
-    # in_place specifies if it should overwrite the existing CLI (True) or print
-    # a new line and a new CLI (False)
+    # print entire CLI
     def cli_setup(self):
         print(HIDE_CURSOR, CLI_TOP, end='')
 
@@ -246,23 +244,24 @@ class sampler:
             return name[0:15] + '~'
         else:
             return name.ljust(16)
-
+    
+    def cli_quit(self):
+        print(RESTORE_CURSOR)
+        print("Exiting...")
+    
     def shut_down(self):
         self.midiport.close()
         self.audio.terminate()
         self.cli_quit()
     
-    def cli_quit(self):
-        print(RESTORE_CURSOR)
-        print("Exiting...")
 
 if __name__ == "__main__":
     mido.set_backend(BACKEND)
-    s: sampler
+    s: PySampler
     if len(argv) > 1:
-        s = sampler(argv[1])
+        s = PySampler(argv[1])
     else:
-        s = sampler()
+        s = PySampler()
     
     try:
         s.run()
