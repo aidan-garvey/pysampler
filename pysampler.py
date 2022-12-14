@@ -114,7 +114,7 @@ class sampler:
             print("Error: could not find audio output device")
             exit()
         else:
-            print("Using audio device",
+            print('\n' * 40, "Using audio device",
                     self.audio.get_device_info_by_index(self.audiodev)['name'])
 
         self.stream = SampleStream(self.audio, self.audiodev)
