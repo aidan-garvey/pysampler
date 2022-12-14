@@ -40,8 +40,9 @@ CLI_STEPS_1 = [f'[{x}]' for x in range(1, 9)]
 CLI_STEPS_2 = [f'[{x}]' for x in ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I']]
 CLI_ADD = "     [A] Add to pattern\n  "
 CLI_REMOVE = "    [D] Delete from pattern\n\n "
-CLI_FILLS = ['[:]', '["]', ' [F] Change\n\n ']
-CLI_TAPS = [f'[{x}]' for x in ['Z', 'B', 'X', 'N', 'C', 'M', 'V']]
+CLI_FILLS = ['[:]', '["]', ' [F] Change\n\n']
+CLI_TAP_KEYS = ['z', 'b', 'x', 'n', 'c', 'm', 'v']
+CLI_TAPS = {f'{x}' : f'[{x.upper()}]' for x in CLI_TAP_KEYS}
 CLI_ARROWS = ['[<] ', ' [>]']
 CLI_EMPTY_FILE = '.' * 16
 
@@ -222,7 +223,19 @@ class sampler:
             print(' ' + COLOR_FILL_OFF + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + file, end='')
         else:
             print(' ' + COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
-        print(CLI_FILLS[2])
+        print(CLI_FILLS[2], end='')
+
+        for ti in range(len(CLI_TAP_KEYS)):
+            t = CLI_TAP_KEYS[ti]
+            if self.taps.get(t) is not None:
+                file = self.cli_filename(self.taps[t])
+                print(' ' + COLOR_HAS_SAMP + CLI_TAPS[t] + COLOR_DEFAULT + ' ' + file, end='')
+            else:
+                print(' ' + COLOR_NO_SAMP + CLI_TAPS[t] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
+            if ti % 2 == 1:
+                print()
+        
+        print(CLI_ARROWS[0] + '000/000' + CLI_ARROWS[1] + '\n\n >\n')
 
     # truncate filename to 16 chars / pad to 16 chars with trailing spaces
     def cli_filename(self, name: str) -> str:
