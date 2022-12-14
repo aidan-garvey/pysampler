@@ -1,9 +1,3 @@
-# what should it be like to use this app?
-1. run a utility that prints a list of connected devices
-2. user adds part of device's name to config file (program will search for it
-within) the names of connected devices
-3. user starts up app
-4. user presses key to send start signal, and start beat clock
 
 # features
 * place a sample on a step
@@ -55,3 +49,38 @@ possible occurs
     in its set, adds them together into one array of bytes
     * each of the Wave_reads whose frames are exhaused by this gets closed and
         removed from the set
+
+* the stepper in the CLI has to go, there doesn't seem to be a way to avoid
+    keypresses screwing it up
+* the 16 steps should still be shown, but they will be lit up depending on the
+    presence of a sample, not based on which step is playing
+    * the fact it will only be updated after a sample is added/removed will
+        allow it to have a more complex appearance
+        ```
+        [-] Stop    [+] Start    [\] Shut Down
+
+        [1][2][3][4][5][6][7][8]     [A] Add to pattern
+         [Q][W][E][R][T][Y][U][I]    [D] Delete from pattern
+
+        [:] ................ ["] ................ [F] Change
+
+        [Z] ................ [B] ................
+        [X] ................ [N] ................
+        [C] ................ [M] ................
+        [V] ................ [<] pg./pgs [>]
+
+        >
+
+        ```
+    * top 2 rows and taps: yellow text on black background for no sample, vice
+        versa for sample
+    * fills: yellow on black for no sample, black on red for sample present but
+        stopped, black on teal for sample present and playing
+    * additionally, keys can be unhooked while the keys are reprinted, then
+        re-enabled once printing is done and cursor is below them
+    * there can be a character like '>' or '?' to indicate that the keys are
+        hooked (i.e. program is ready for input)
+* to avoid all the keys showing up in the terminal after the program finishes,
+    use an input statement that says "Press Enter / Return to quit" which
+    discards the result
+    * even better: use keyboard module to press enter for the user!
