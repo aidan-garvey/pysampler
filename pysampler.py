@@ -212,13 +212,13 @@ class sampler:
         print(COLOR_DEFAULT + CLI_REMOVE, end='')
 
         if self.fill1 is not None:
-            file = self.cli_filename(self.fill1)
+            file = self.cli_filename(self.fill1[0])
             print(COLOR_FILL_OFF + CLI_FILLS[0] + COLOR_DEFAULT + file, end='')
         else:
             print(COLOR_NO_SAMP + CLI_FILLS[0] + COLOR_DEFAULT + CLI_EMPTY_FILE, end='')
         
         if self.fill2 is not None:
-            file = self.cli_filename(self.fill2)
+            file = self.cli_filename(self.fill2[0])
             print(COLOR_FILL_OFF + CLI_FILLS[1] + COLOR_DEFAULT + file, end='')
         else:
             print(COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + CLI_EMPTY_FILE, end='')
