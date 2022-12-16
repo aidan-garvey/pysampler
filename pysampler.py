@@ -19,6 +19,12 @@ KEY_STOP = keyboard.normalize_name('minus')
 KEY_SHUTDOWN = '\\'
 KEY_FILL1 = ';'
 KEY_FILL2 = '\''
+KEY_TAP_LEFT = ','
+KEY_TAP_RIGHT = '.'
+KEY_CHANGE_FILLS = 'c'
+KEY_ADD = 'z'
+KEY_DELETE = 'x'
+KEY_SPACE = 'space'
 
 # these strings are used to generate the following CLI:
 '''
@@ -183,18 +189,48 @@ class PySampler:
             self.online = False
 
         # sample bank switches
-        elif event.name == '<':
-            self.bank_index -= 1
-            if self.bank_index < 0:
-                self.bank_index = len(self.tap_banks) - 1
-            self.load_bank()
-            self.cli_taps()
-        elif event.name == '>':
-            self.bank_index += 1
-            if self.bank_index >= len(self.tap_banks):
-                self.bank_index = 0
-            self.load_bank()
-            self.cli_taps()
+        elif event.name == KEY_TAP_LEFT:
+            self.cli_change_taps(True)
+        elif event.name == KEY_TAP_RIGHT:
+            self.cli_change_taps(False)
+        
+        # fill change button
+        elif event.name == KEY_CHANGE_FILLS:
+            keyboard.unhook_all()
+            keyboard.on_press(self.select_fill)
+
+    # select a sample from the bank to switch to
+    def select_fill(self, event: keyboard.KeyboardEvent):
+        if self.taps.get(event.name) is not None:
+            self.next_fill = self.taps[event.name]
+            keyboard.unhook_all()
+            keyboard.on_press(self.overwrite_fill)
+        # exit mode
+        elif event.name == KEY_SPACE:
+            keyboard.unhook_all()
+            keyboard.on_press(self.handle_key)
+        # allow switching banks while a sample is being selected
+        elif event.name == KEY_TAP_LEFT:
+            self.cli_change_taps(True)
+        elif event.name == KEY_TAP_RIGHT:
+            self.cli_change_taps(False)
+
+    # choose the fill slot to overwrite
+    def overwrite_fill(self, event: keyboard.KeyboardEvent):
+        if event.name == KEY_FILL1:
+            self.fill1 = self.next_fill
+            keyboard.unhook_all()
+            self.cli_fills()
+            keyboard.on_press(self.handle_key)
+        elif event.name == KEY_FILL2:
+            self.fill2 = self.next_fill
+            keyboard.unhook_all()
+            self.cli_fills()
+            keyboard.on_press(self.handle_key)
+        # exit mode
+        elif event.name == KEY_SPACE:
+            keyboard.unhook_all()
+            keyboard.on_press(self.handle_key)
 
     def play_step(self):
         if self.fill1_on and self.fill1 is not None \
@@ -216,6 +252,8 @@ class PySampler:
         
         for i in range(len(bank)):
             self.taps[TAP_KEYS_KBD_ORDER[i]] = bank[i]
+        for i in range(len(bank), len(self.taps)):
+            self.taps[TAP_KEYS_KBD_ORDER[i]] = None
 
     # print entire CLI
     def cli_setup(self):
@@ -272,6 +310,19 @@ class PySampler:
             return name[0:15] + '~'
         else:
             return name.ljust(16)
+
+    def cli_change_taps(self, left: bool):
+        if left:
+            self.bank_index -= 1
+            if self.bank_index < 0:
+                self.bank_index = len(self.tap_banks) - 1
+        else:
+            self.bank_index = (self.bank_index + 1) % len(self.tap_banks)
+        self.load_bank()
+        self.cli_taps()
+
+    def cli_fills(self):
+        print('#', end='')
 
     def cli_taps(self):
         # move cursor up 6 rows, go to start
