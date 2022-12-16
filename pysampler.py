@@ -161,7 +161,7 @@ class PySampler:
     
     def handle_key(self, event: keyboard.KeyboardEvent):
         # backspace so pressed key doesn't show up in program
-        print('\x08', end='', flush=True)
+        # print('\x08', end='', flush=True)
         # play tap sample
         if self.taps.get(event.name) is not None:
             self.stream.play(self.taps[event.name])
@@ -197,6 +197,7 @@ class PySampler:
         # fill change button
         elif event.name == KEY_CHANGE_FILLS:
             keyboard.unhook_all()
+            print("\r > Select sample", end='')
             keyboard.on_press(self.select_fill)
 
     # select a sample from the bank to switch to
@@ -204,7 +205,7 @@ class PySampler:
         if self.taps.get(event.name) is not None:
             keyboard.unhook_all()
             self.next_fill = self.taps[event.name]
-            print(self.next_fill, end='')
+            print('\r > ' + self.next_fill + ', select slot', end='')
             keyboard.on_press(self.overwrite_fill)
         # exit mode
         elif event.name == KEY_SPACE:
@@ -219,19 +220,47 @@ class PySampler:
     # choose the fill slot to overwrite
     def overwrite_fill(self, event: keyboard.KeyboardEvent):
         if event.name == KEY_FILL1:
-            self.fill1 = self.next_fill
             keyboard.unhook_all()
+            self.fill1 = (self.next_fill, self.fill1[1])
             self.cli_fills()
-            keyboard.on_press(self.handle_key)
+            print('Select frequency', end='')
+            self.fill_selected = 1
+            keyboard.on_press(self.fill_freq)
         elif event.name == KEY_FILL2:
-            self.fill2 = self.next_fill
             keyboard.unhook_all()
+            self.fill2 = (self.next_fill, self.fill2[1])
             self.cli_fills()
-            keyboard.on_press(self.handle_key)
+            print('Select frequency', end='')
+            self.fill_selected = 2
+            keyboard.on_press(self.fill_freq)
         # exit mode
         elif event.name == KEY_SPACE:
             keyboard.unhook_all()
             keyboard.on_press(self.handle_key)
+
+    # choose frequency of fill
+    # 0 -> every 16 steps
+    # 1 -> every step
+    # 2 -> every 2 steps
+    # 4 -> every 4 steps, etc.
+    # non-powers of 2 are allowed but the count resets every 16 beats
+    def fill_freq(self, event: keyboard.KeyboardEvent):
+        if event.name == KEY_SPACE:
+            keyboard.unhook_all()
+            keyboard.on_press(self.handle_key)
+        else:
+            try:
+                amt = int(event.name)
+                if amt == 0:
+                    amt = 16
+                if self.fill_selected == 1:
+                    self.fill1 = (self.fill1[0], amt)
+                else:
+                    self.fill2 = (self.fill2[0], amt)
+                keyboard.unhook_all()
+                keyboard.on_press(self.handle_key)
+            except:
+                pass
 
     def play_step(self):
         if self.fill1_on and self.fill1 is not None \
