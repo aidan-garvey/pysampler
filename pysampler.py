@@ -12,6 +12,7 @@ from samplestream import SampleStream
 BACKEND = 'mido.backends.rtmidi'
 CONFIG: dict = json.loads(open('config.json', 'r').read())
 MAX_STEPS = 16
+BANK_SIZE = 8
 
 KEY_START = '='
 KEY_STOP = keyboard.normalize_name('minus')
@@ -21,29 +22,29 @@ KEY_FILL2 = '\''
 
 # these strings are used to generate the following CLI:
 '''
-[-] Stop    [+] Start    [\] Shut Down
+ [-] Stop    [+] Start    [\] Shut Down
 
-        [1][2][3][4][5][6][7][8]     [A] Add to pattern
-         [Q][W][E][R][T][Y][U][I]    [D] Delete from pattern
+ [1][2][3][4][5][6][7][8]     [A] Add to pattern
+  [Q][W][E][R][T][Y][U][I]    [D] Delete from pattern
 
-        [:] ................ ["] ................ [F] Change
+ [:] ................ ["] ................ [F] Change
 
-        [Z] ................ [B] ................
-        [X] ................ [N] ................
-        [C] ................ [M] ................
-        [V] ................ [<] pg./pgs [>]
+ [Z] ................ [B] ................
+ [X] ................ [N] ................
+ [C] ................ [M] ................
+ [V] ................ [<] pg./pgs [>]
 
-        >
+ > 
 '''
 CLI_TOP = "\n [-] Stop    [+] Start    [\] Shut Down\n\n "
 CLI_STEPS_1 = [f'[{x}]' for x in range(1, 9)]
 CLI_STEPS_2 = [f'[{x}]' for x in ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I']]
-CLI_ADD = "     [A] Add to pattern\n  "
-CLI_REMOVE = "    [D] Delete from pattern\n\n "
-CLI_FILLS = ['[:]', '["]', ' [F] Change\n\n']
-CLI_TAP_KEYS = ['z', 'b', 'x', 'n', 'c', 'm', 'v']
+CLI_ADD = "     [Z] Add to pattern\n  "
+CLI_REMOVE = "    [X] Delete from pattern\n\n "
+CLI_FILLS = ['[:]', '["]', ' [C] Change\n\n']
+CLI_TAP_KEYS = ['a', 'g', 's', 'h', 'd', 'j', 'f', 'k']
 CLI_TAPS = {f'{x}' : f'[{x.upper()}]' for x in CLI_TAP_KEYS}
-CLI_ARROWS = [' [<] ', ' [>]']
+CLI_ARROWS = [' ' * 14 + '[<] ', ' [>]']
 CLI_EMPTY_FILE = '.' * 16
 
 HIDE_CURSOR = '\x1B[25l'
@@ -53,6 +54,8 @@ COLOR_NO_SAMP = '\x1B[33;40m'
 COLOR_HAS_SAMP = '\x1B[30;43m'
 COLOR_FILL_ON = '\x1B[30;46m'
 COLOR_FILL_OFF = '\x1B[30;41m'
+
+TAP_KEYS_KBD_ORDER = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k']
 
 class PySampler:
     audio = PyAudio()
@@ -77,15 +80,9 @@ class PySampler:
     fill2_on = False
 
     # keys mapped to samples played upon pressing them
-    taps: dict[str, str] = {
-        'z': None,
-        'x': None,
-        'c': None,
-        'v': None,
-        'b': None,
-        'n': None,
-        'm': None
-    }
+    taps: dict[str, str] = {x: None for x in CLI_TAP_KEYS}
+    tap_banks: list[list[str]] = []
+    bank_index = 0
 
     def __init__(self, preload = None):
         self.online = True
@@ -136,10 +133,13 @@ class PySampler:
             if preset.get('fill2') is not None:
                 self.fill2 = (preset['fill2'][0], preset['fill2'][1])
 
-            if preset.get('taps') is not None:
-                taps: dict[str, str] = preset['taps']
-                for key in self.taps.keys():
-                    self.taps[key] = taps.get(key)
+            if preset.get('tap_banks') is not None:
+                self.tap_banks = preset['tap_banks']
+                if len(self.tap_banks) > 999:
+                    print("Error: too many sample banks! You must have less than 1000 banks of up to 8 samples each.")
+                    exit()
+                self.bank_index = 0
+                self.load_bank()
 
     def run(self):
         self.online = True
@@ -159,23 +159,42 @@ class PySampler:
         # play tap sample
         if self.taps.get(event.name) is not None:
             self.stream.play(self.taps[event.name])
+
         # toggle fill 1
         elif event.name == KEY_FILL1:
             self.fill1_on = not self.fill1_on
+
         # toggle fill 2
         elif event.name == KEY_FILL2:
             self.fill2_on = not self.fill2_on
+
         # start key
         elif event.name == KEY_START:
             self.step = 0
             self.clock.start()
+
         # stop key
         elif event.name == KEY_STOP:
             self.clock.stop()
+
         # shutdown key
         elif event.name == KEY_SHUTDOWN:
             self.clock.stop()
             self.online = False
+
+        # sample bank switches
+        elif event.name == '<':
+            self.bank_index -= 1
+            if self.bank_index < 0:
+                self.bank_index = len(self.tap_banks) - 1
+            self.load_bank()
+            self.cli_taps()
+        elif event.name == '>':
+            self.bank_index += 1
+            if self.bank_index >= len(self.tap_banks):
+                self.bank_index = 0
+            self.load_bank()
+            self.cli_taps()
 
     def play_step(self):
         if self.fill1_on and self.fill1 is not None \
@@ -188,6 +207,15 @@ class PySampler:
         
         if self.pattern[self.step] is not None:
             self.stream.play(self.pattern[self.step])
+
+    # load self.tap_banks[self.bank_index] into self.taps
+    def load_bank(self):
+        bank = self.tap_banks[self.bank_index]
+        if len(bank) > BANK_SIZE:
+            raise Exception(f'Tap bank {self.bank_index + 1} has too many samples')
+        
+        for i in range(len(bank)):
+            self.taps[TAP_KEYS_KBD_ORDER[i]] = bank[i]
 
     # print entire CLI
     def cli_setup(self):
@@ -233,7 +261,7 @@ class PySampler:
             if ti % 2 == 1:
                 print()
         
-        print(CLI_ARROWS[0] + '000/000' + CLI_ARROWS[1] + '\n\n\n\x1B[1A > ', end='')
+        print(CLI_ARROWS[0] + f'{self.bank_index + 1 :03}/{len(self.tap_banks) :03}' + CLI_ARROWS[1] + '\n\n\n\x1B[1A > ', end='')
 
     # truncate filename to 16 chars / pad to 16 chars with trailing spaces
     def cli_filename(self, name: str) -> str:
@@ -244,7 +272,22 @@ class PySampler:
             return name[0:15] + '~'
         else:
             return name.ljust(16)
-    
+
+    def cli_taps(self):
+        # move cursor up 6 rows, go to start
+        print('\x1B[6A\r ')
+        for ti in range(len(CLI_TAP_KEYS)):
+            t = CLI_TAP_KEYS[ti]
+            if self.taps.get(t) is not None:
+                file = self.cli_filename(self.taps[t])
+                print(' ' + COLOR_HAS_SAMP + CLI_TAPS[t] + COLOR_DEFAULT + ' ' + file, end='')
+            else:
+                print(' ' + COLOR_NO_SAMP + CLI_TAPS[t] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
+            if ti % 2 == 1:
+                print()
+        
+        print(CLI_ARROWS[0] + f'{self.bank_index + 1 :03}/{len(self.tap_banks) :03}' + CLI_ARROWS[1] + '\n\n\n\x1B[1A > ', end='')
+
     def cli_quit(self):
         print(RESTORE_CURSOR)
         print("Exiting...")
@@ -253,7 +296,6 @@ class PySampler:
         self.midiport.close()
         self.audio.terminate()
         self.cli_quit()
-    
 
 if __name__ == "__main__":
     mido.set_backend(BACKEND)
