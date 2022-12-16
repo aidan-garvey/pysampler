@@ -30,7 +30,7 @@ class SampleStream:
         self.queued_samples = set()
     
     def play(self, filename):
-        self.queued_samples.add(wave.open(filename, 'rb'))
+        self.queued_samples.add(wave.open('samples/' + filename, 'rb'))
     
     def callback(self, in_data, frame_count, time_info, status):
         # add any queued samples
