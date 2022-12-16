@@ -202,8 +202,9 @@ class PySampler:
     # select a sample from the bank to switch to
     def select_fill(self, event: keyboard.KeyboardEvent):
         if self.taps.get(event.name) is not None:
-            self.next_fill = self.taps[event.name]
             keyboard.unhook_all()
+            self.next_fill = self.taps[event.name]
+            print(self.next_fill, end='')
             keyboard.on_press(self.overwrite_fill)
         # exit mode
         elif event.name == KEY_SPACE:
@@ -322,11 +323,26 @@ class PySampler:
         self.cli_taps()
 
     def cli_fills(self):
-        print('#', end='')
+        # move cursor up 8 rows
+        print('\x1B[8A\r ', end='')
+        if self.fill1 is not None:
+            file = self.cli_filename(self.fill1[0])
+            print(COLOR_FILL_OFF + CLI_FILLS[0] + COLOR_DEFAULT + ' ' + file, end='')
+        else:
+            print(COLOR_NO_SAMP + CLI_FILLS[0] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
+        
+        if self.fill2 is not None:
+            file = self.cli_filename(self.fill2[0])
+            print(' ' + COLOR_FILL_OFF + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + file, end='')
+        else:
+            print(' ' + COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
+        print(CLI_FILLS[2], end='')
+        # go back to home position
+        print('\n' * 6 + ' > ', end='')
 
     def cli_taps(self):
-        # move cursor up 6 rows, go to start
-        print('\x1B[6A\r ')
+        # move cursor up 6 rows
+        print('\x1B[6A\r ', end='')
         for ti in range(len(CLI_TAP_KEYS)):
             t = CLI_TAP_KEYS[ti]
             if self.taps.get(t) is not None:
