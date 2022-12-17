@@ -17,6 +17,8 @@ class SampleStream:
     samples: set[wave.Wave_read]
     # wave files we need to add to samples
     queued_samples: set[wave.Wave_read]
+    # map filenames to the associated wave
+    samp_files: dict[str, wave.Wave_read]
 
     # initialize stream connected to device
     def __init__(self, audio: PyAudio, device: int):
@@ -30,9 +32,18 @@ class SampleStream:
             stream_callback=self.callback)
         self.samples = set()
         self.queued_samples = set()
+        self.samp_files = dict()
     
     def play(self, filename):
-        self.queued_samples.add(wave.open('samples/' + filename, 'rb'))
+        # if it's already open, rewind it
+        sf = self.samp_files.get(filename)
+        if sf is not None:
+            sf.rewind()
+        # if it hasn't been opened, open it and add to queue
+        else:
+            sf = wave.open('samples/' + filename, 'rb')
+            self.samp_files[filename] = sf
+            self.queued_samples.add(sf)
     
     def callback(self, in_data, frame_count, time_info, status):
         # add any queued samples
@@ -40,13 +51,11 @@ class SampleStream:
         self.queued_samples.clear()
 
         # at most frame_count frames from each wave will be converted to ints
-        buffs: list[array[int]] = []
+        buffs: list[array] = []
         # final result
         result = array('h', b'\0' * frame_count * FRAME_WIDTH)
         # intermediate result
         temp = [0] * frame_count * CHANNELS
-        # we will remove completed streams from the set later
-        to_remove = set()
 
         # read frame_count frames from each sample, convert to 16-bit ints
         num_buffs = 0 # count number of buffers
@@ -54,19 +63,13 @@ class SampleStream:
             # read frames
             wbytes = wave.readframes(frame_count)
 
-            # if we've read all frames, don't include in buffs, remove later
+            # if we've read all frames, don't include in buffs
             if len(wbytes) == 0:
-                to_remove.add(wave)
                 continue
 
             # convert to array of 16-bit signed integers
             buffs.append(array('h', wbytes))
             num_buffs += 1
-        
-        # remove unneeded buffers
-        for wave in to_remove:
-            wave.close()
-            self.samples.remove(wave)
 
         # add contents of all samples into temp
         for i in range(num_buffs):
