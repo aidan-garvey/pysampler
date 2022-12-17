@@ -52,6 +52,7 @@ CLI_TAP_KEYS = ['a', 'g', 's', 'h', 'd', 'j', 'f', 'k']
 CLI_TAPS = {f'{x}' : f'[{x.upper()}]' for x in CLI_TAP_KEYS}
 CLI_ARROWS = [' ' * 14 + '[<] ', ' [>]']
 CLI_EMPTY_FILE = '.' * 16
+CLI_CLEAR_PROMPT = ' ' * 40
 
 HIDE_CURSOR = '\x1B[25l'
 RESTORE_CURSOR = '\x1B[25h'
@@ -197,7 +198,7 @@ class PySampler:
         # fill change button
         elif event.name == KEY_CHANGE_FILLS:
             keyboard.unhook_all()
-            print("\r > Select sample", end='')
+            print(CLI_CLEAR_PROMPT + '\r > Select sample', end='')
             keyboard.on_press(self.select_fill)
 
     # select a sample from the bank to switch to
@@ -205,7 +206,7 @@ class PySampler:
         if self.taps.get(event.name) is not None:
             keyboard.unhook_all()
             self.next_fill = self.taps[event.name]
-            print('\r > ' + self.next_fill + ', select slot', end='')
+            print(CLI_CLEAR_PROMPT + '\r > ' + self.next_fill + ', select slot', end='')
             keyboard.on_press(self.overwrite_fill)
         # exit mode
         elif event.name == KEY_SPACE:
@@ -223,14 +224,14 @@ class PySampler:
             keyboard.unhook_all()
             self.fill1 = (self.next_fill, self.fill1[1])
             self.cli_fills()
-            print('Select frequency', end='')
+            print(CLI_CLEAR_PROMPT + '\r > Select frequency', end='')
             self.fill_selected = 1
             keyboard.on_press(self.fill_freq)
         elif event.name == KEY_FILL2:
             keyboard.unhook_all()
             self.fill2 = (self.next_fill, self.fill2[1])
             self.cli_fills()
-            print('Select frequency', end='')
+            print(CLI_CLEAR_PROMPT + '\r > Select frequency', end='')
             self.fill_selected = 2
             keyboard.on_press(self.fill_freq)
         # exit mode
@@ -258,6 +259,7 @@ class PySampler:
                 else:
                     self.fill2 = (self.fill2[0], amt)
                 keyboard.unhook_all()
+                print(CLI_CLEAR_PROMPT + '\r > ', end='')
                 keyboard.on_press(self.handle_key)
             except:
                 pass
@@ -371,7 +373,7 @@ class PySampler:
 
     def cli_taps(self):
         # move cursor up 6 rows
-        print('\x1B[6A\r ', end='')
+        print('\x1B[6A\r', end='')
         for ti in range(len(CLI_TAP_KEYS)):
             t = CLI_TAP_KEYS[ti]
             if self.taps.get(t) is not None:
