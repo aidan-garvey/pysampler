@@ -52,7 +52,7 @@ CLI_TAP_KEYS = ['a', 'g', 's', 'h', 'd', 'j', 'f', 'k']
 CLI_TAPS = {f'{x}' : f'[{x.upper()}]' for x in CLI_TAP_KEYS}
 CLI_ARROWS = [' ' * 14 + '[<] ', ' [>]']
 CLI_EMPTY_FILE = '.' * 16
-CLI_FRESH_PROMPT = ' ' * 40 + '\r > '
+CLI_FRESH_PROMPT = '\r' + ' ' * 40 + '\r > '
 
 HIDE_CURSOR = '\x1B[25l'
 RESTORE_CURSOR = '\x1B[25h'
