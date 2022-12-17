@@ -52,7 +52,7 @@ CLI_TAP_KEYS = ['a', 'g', 's', 'h', 'd', 'j', 'f', 'k']
 CLI_TAPS = {f'{x}' : f'[{x.upper()}]' for x in CLI_TAP_KEYS}
 CLI_ARROWS = [' ' * 14 + '[<] ', ' [>]']
 CLI_EMPTY_FILE = '.' * 16
-CLI_CLEAR_PROMPT = ' ' * 40
+CLI_FRESH_PROMPT = ' ' * 40 + '\r > '
 
 HIDE_CURSOR = '\x1B[25l'
 RESTORE_CURSOR = '\x1B[25h'
@@ -198,7 +198,7 @@ class PySampler:
         # fill change button
         elif event.name == KEY_CHANGE_FILLS:
             keyboard.unhook_all()
-            print('\r > Select sample' + CLI_CLEAR_PROMPT, end='')
+            print(CLI_FRESH_PROMPT + 'Select sample', end='')
             keyboard.on_press(self.select_fill)
 
     # select a sample from the bank to switch to
@@ -206,7 +206,7 @@ class PySampler:
         if self.taps.get(event.name) is not None:
             keyboard.unhook_all()
             self.next_fill = self.taps[event.name]
-            print('\r > ' + self.next_fill + ', select slot' + CLI_CLEAR_PROMPT, end='')
+            print(CLI_FRESH_PROMPT + self.next_fill + ', select slot', end='')
             keyboard.on_press(self.overwrite_fill)
         # exit mode
         elif event.name == KEY_SPACE:
@@ -217,6 +217,10 @@ class PySampler:
             self.cli_change_taps(True)
         elif event.name == KEY_TAP_RIGHT:
             self.cli_change_taps(False)
+        # shutdown key
+        elif event.name == KEY_SHUTDOWN:
+            self.clock.stop()
+            self.online = False
 
     # choose the fill slot to overwrite
     def overwrite_fill(self, event: keyboard.KeyboardEvent):
@@ -224,20 +228,24 @@ class PySampler:
             keyboard.unhook_all()
             self.fill1 = (self.next_fill, self.fill1[1])
             self.cli_fills()
-            print('\r > Select frequency' + CLI_CLEAR_PROMPT, end='')
+            print(CLI_FRESH_PROMPT + 'Select frequency', end='')
             self.fill_selected = 1
             keyboard.on_press(self.fill_freq)
         elif event.name == KEY_FILL2:
             keyboard.unhook_all()
             self.fill2 = (self.next_fill, self.fill2[1])
             self.cli_fills()
-            print('\r > Select frequency' + CLI_CLEAR_PROMPT, end='')
+            print(CLI_FRESH_PROMPT + 'Select frequency', end='')
             self.fill_selected = 2
             keyboard.on_press(self.fill_freq)
         # exit mode
         elif event.name == KEY_SPACE:
             keyboard.unhook_all()
             keyboard.on_press(self.handle_key)
+        # shutdown key
+        elif event.name == KEY_SHUTDOWN:
+            self.clock.stop()
+            self.online = False
 
     # choose frequency of fill
     # 0 -> every 16 steps
@@ -249,6 +257,10 @@ class PySampler:
         if event.name == KEY_SPACE:
             keyboard.unhook_all()
             keyboard.on_press(self.handle_key)
+        # shutdown key
+        elif event.name == KEY_SHUTDOWN:
+            self.clock.stop()
+            self.online = False
         else:
             try:
                 amt = int(event.name)
@@ -259,7 +271,7 @@ class PySampler:
                 else:
                     self.fill2 = (self.fill2[0], amt)
                 keyboard.unhook_all()
-                print('\r > ' + CLI_CLEAR_PROMPT, end='')
+                print(CLI_FRESH_PROMPT, end='')
                 keyboard.on_press(self.handle_key)
             except:
                 pass
@@ -369,7 +381,7 @@ class PySampler:
             print(' ' + COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
         print(CLI_FILLS[2], end='')
         # go back to home position
-        print('\n' * 6 + ' > ', end='')
+        print('\n' * 6, end='')
 
     def cli_taps(self):
         # move cursor up 6 rows
@@ -384,7 +396,7 @@ class PySampler:
             if ti % 2 == 1:
                 print()
         
-        print(CLI_ARROWS[0] + f'{self.bank_index + 1 :03}/{len(self.tap_banks) :03}' + CLI_ARROWS[1] + '\n\n\n\x1B[1A > ', end='')
+        print(CLI_ARROWS[0] + f'{self.bank_index + 1 :03}/{len(self.tap_banks) :03}' + CLI_ARROWS[1] + '\n\n > ', end='')
 
     def cli_quit(self):
         print(RESTORE_CURSOR)
