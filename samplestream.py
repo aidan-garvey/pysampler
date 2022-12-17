@@ -7,6 +7,8 @@ BYTE_WIDTH = 2 # PCM 16 format
 CHANNELS = 2 # stereo
 FRAME_WIDTH = BYTE_WIDTH * CHANNELS
 RATE = 44100 # sample rate, Hz
+MAX = 2**15 - 1
+MIN = -2**15
 
 class SampleStream:
 
@@ -41,6 +43,8 @@ class SampleStream:
         buffs: list[array[int]] = []
         # final result
         result = array('h', b'\0' * frame_count * FRAME_WIDTH)
+        # intermediate result
+        temp = [0] * frame_count * CHANNELS
         # we will remove completed streams from the set later
         to_remove = set()
 
@@ -64,11 +68,20 @@ class SampleStream:
             wave.close()
             self.samples.remove(wave)
 
-        # average contents of all samples into result
+        # add contents of all samples into temp
         for i in range(num_buffs):
             curr = buffs[i]
             for j in range(len(curr)):
-                result[j] += curr[j] // num_buffs
+                temp[j] += curr[j]
+        
+        # copy temp into result, clamp to signed 16-bit limits
+        for i in range(len(temp)):
+            if temp[i] > MAX:
+                result[i] = MAX
+            elif temp[i] < MIN:
+                result[i] = MIN
+            else:
+                result[i] = temp[i]
         
         # convert buffer back into bytes and return it
         return (result.tobytes(), paContinue)
