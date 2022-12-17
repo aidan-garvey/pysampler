@@ -198,7 +198,7 @@ class PySampler:
         # fill change button
         elif event.name == KEY_CHANGE_FILLS:
             keyboard.unhook_all()
-            print(CLI_CLEAR_PROMPT + '\r > Select sample', end='')
+            print('\r > Select sample' + CLI_CLEAR_PROMPT, end='')
             keyboard.on_press(self.select_fill)
 
     # select a sample from the bank to switch to
@@ -206,7 +206,7 @@ class PySampler:
         if self.taps.get(event.name) is not None:
             keyboard.unhook_all()
             self.next_fill = self.taps[event.name]
-            print(CLI_CLEAR_PROMPT + '\r > ' + self.next_fill + ', select slot', end='')
+            print('\r > ' + self.next_fill + ', select slot' + CLI_CLEAR_PROMPT, end='')
             keyboard.on_press(self.overwrite_fill)
         # exit mode
         elif event.name == KEY_SPACE:
@@ -224,14 +224,14 @@ class PySampler:
             keyboard.unhook_all()
             self.fill1 = (self.next_fill, self.fill1[1])
             self.cli_fills()
-            print(CLI_CLEAR_PROMPT + '\r > Select frequency', end='')
+            print('\r > Select frequency' + CLI_CLEAR_PROMPT, end='')
             self.fill_selected = 1
             keyboard.on_press(self.fill_freq)
         elif event.name == KEY_FILL2:
             keyboard.unhook_all()
             self.fill2 = (self.next_fill, self.fill2[1])
             self.cli_fills()
-            print(CLI_CLEAR_PROMPT + '\r > Select frequency', end='')
+            print('\r > Select frequency' + CLI_CLEAR_PROMPT, end='')
             self.fill_selected = 2
             keyboard.on_press(self.fill_freq)
         # exit mode
@@ -259,7 +259,7 @@ class PySampler:
                 else:
                     self.fill2 = (self.fill2[0], amt)
                 keyboard.unhook_all()
-                print(CLI_CLEAR_PROMPT + '\r > ', end='')
+                print('\r > ' + CLI_CLEAR_PROMPT, end='')
                 keyboard.on_press(self.handle_key)
             except:
                 pass
