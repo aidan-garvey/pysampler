@@ -12,6 +12,14 @@
             "rimshot-2.wav",
             "kick-1.wav",
             "cymbal-1.wav"
+        ],
+        [
+            "down.wav",
+            "blackout.wav",
+            "mic.wav",
+            "rock.wav",
+            "go_down_wto.wav",
+            "down_wtob.wav"
         ]
     ]
 }
