@@ -363,6 +363,7 @@ class PySampler:
         # select step to remove sample from
         if KEY_TO_PAT_INDEX.get(event.name) is not None:
             self.pattern[KEY_TO_PAT_INDEX[event.name]] = None
+            self.cli_pattern()
         # exit mode
         elif event.name == KEY_SPACE:
             keyboard.unhook_all()
@@ -497,7 +498,7 @@ class PySampler:
 
     def cli_pattern(self):
         # move cursor up 11 rows
-        print('\x1B[8A\r ', end='')
+        print('\x1B[11A\r ', end='')
         hlen = len(self.pattern) // 2
         # print top row
         for i in range(hlen):
