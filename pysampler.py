@@ -507,7 +507,7 @@ class PySampler:
             else:
                 print(COLOR_NO_SAMP, end='')
             print(CLI_STEPS_1[i], end='')
-        print('\n  ', end='')
+        print(COLOR_DEFAULT + '\n  ', end='')
         # print bottom row
         for i in range(hlen):
             j = i + hlen
