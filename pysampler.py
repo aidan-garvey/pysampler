@@ -64,6 +64,28 @@ COLOR_FILL_OFF = '\x1B[30;41m'
 
 TAP_KEYS_KBD_ORDER = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k']
 
+KEY_TO_PAT_INDEX: dict[str, int] = {
+    '1': 0,
+    '2': 1,
+    '3': 2,
+    '4': 3,
+
+    '5': 4,
+    '6': 5,
+    '7': 6,
+    '8': 7,
+    
+    'q': 8,
+    'w': 9,
+    'e': 10,
+    'r': 11,
+    
+    't': 12,
+    'y': 13,
+    'u': 14,
+    'i': 15
+}
+
 class PySampler:
     audio = PyAudio()
     sec_per_pulse: float
@@ -200,6 +222,18 @@ class PySampler:
             keyboard.unhook_all()
             print(CLI_FRESH_PROMPT + 'Select sample', end='')
             keyboard.on_press(self.select_fill)
+        
+        # pattern add button
+        elif event.name == KEY_ADD:
+            keyboard.unhook_all()
+            print(CLI_FRESH_PROMPT + 'Select sample', end='')
+            keyboard.on_press(self.select_add_sample)
+        
+        # pattern remove button
+        elif event.name == KEY_DELETE:
+            keyboard.unhook_all()
+            print(CLI_FRESH_PROMPT + 'Select steps', end='')
+            keyboard.on_press(self.remove_pattern)
 
     # select a sample from the bank to switch to
     def select_fill(self, event: keyboard.KeyboardEvent):
@@ -211,6 +245,7 @@ class PySampler:
         # exit mode
         elif event.name == KEY_SPACE:
             keyboard.unhook_all()
+            print(CLI_FRESH_PROMPT, end='')
             keyboard.on_press(self.handle_key)
         # allow switching banks while a sample is being selected
         elif event.name == KEY_TAP_LEFT:
@@ -241,6 +276,7 @@ class PySampler:
         # exit mode
         elif event.name == KEY_SPACE:
             keyboard.unhook_all()
+            print(CLI_FRESH_PROMPT, end='')
             keyboard.on_press(self.handle_key)
         # shutdown key
         elif event.name == KEY_SHUTDOWN:
@@ -256,6 +292,7 @@ class PySampler:
     def fill_freq(self, event: keyboard.KeyboardEvent):
         if event.name == KEY_SPACE:
             keyboard.unhook_all()
+            print(CLI_FRESH_PROMPT, end='')
             keyboard.on_press(self.handle_key)
         # shutdown key
         elif event.name == KEY_SHUTDOWN:
@@ -275,6 +312,66 @@ class PySampler:
                 keyboard.on_press(self.handle_key)
             except:
                 pass
+
+    def select_add_sample(self, event: keyboard.KeyboardEvent):
+        # select sample to place
+        if self.taps.get(event.name) is not None:
+            keyboard.unhook_all()
+            self.next_pat = self.taps[event.name]
+            print(CLI_FRESH_PROMPT + self.next_pat + ', select steps', end='')
+            keyboard.on_press(self.place_in_pattern)
+        # allow switching banks while a sample is being selected
+        elif event.name == KEY_TAP_LEFT:
+            self.cli_change_taps(True)
+        elif event.name == KEY_TAP_RIGHT:
+            self.cli_change_taps(False)
+        # exit mode
+        elif event.name == KEY_SPACE:
+            keyboard.unhook_all()
+            print(CLI_FRESH_PROMPT, end='')
+            keyboard.on_press(self.handle_key)
+        # shut down
+        elif event.name == KEY_SHUTDOWN:
+            self.clock.stop()
+            self.online = False
+
+    def place_in_pattern(self, event: keyboard.KeyboardEvent):
+        # select step to place sample on
+        if KEY_TO_PAT_INDEX.get(event.name) is not None:
+            self.pattern[KEY_TO_PAT_INDEX[event.name]] = self.next_pat
+            self.cli_pattern()
+        # select a different sample
+        elif self.taps.get(event.name) is not None:
+            self.next_pat = self.taps[event.name]
+            print(CLI_FRESH_PROMPT + self.next_pat + ', select steps', end='')
+        # allow switching banks while a sample is being selected
+        elif event.name == KEY_TAP_LEFT:
+            self.cli_change_taps(True)
+        elif event.name == KEY_TAP_RIGHT:
+            self.cli_change_taps(False)
+        # exit mode
+        elif event.name == KEY_SPACE:
+            keyboard.unhook_all()
+            print(CLI_FRESH_PROMPT, end='')
+            keyboard.on_press(self.handle_key)
+        # shut down
+        elif event.name == KEY_SHUTDOWN:
+            self.clock.stop()
+            self.online = False
+
+    def remove_pattern(self, event: keyboard.KeyboardEvent):
+        # select step to remove sample from
+        if KEY_TO_PAT_INDEX.get(event.name) is not None:
+            self.pattern[KEY_TO_PAT_INDEX[event.name]] = None
+        # exit mode
+        elif event.name == KEY_SPACE:
+            keyboard.unhook_all()
+            print(CLI_FRESH_PROMPT, end='')
+            keyboard.on_press(self.handle_key)
+        # shut down
+        elif event.name == KEY_SHUTDOWN:
+            self.clock.stop()
+            self.online = False
 
     def play_step(self):
         if self.fill1_on and self.fill1 is not None \
@@ -397,6 +494,28 @@ class PySampler:
                 print()
         
         print(CLI_ARROWS[0] + f'{self.bank_index + 1 :03}/{len(self.tap_banks) :03}' + CLI_ARROWS[1] + '\n\n > ', end='')
+
+    def cli_pattern(self):
+        # move cursor up 11 rows
+        print('\x1B[8A\r ', end='')
+        hlen = len(self.pattern) // 2
+        # print top row
+        for i in range(hlen):
+            if self.pattern[i] is not None:
+                print(COLOR_HAS_SAMP, end='')
+            else:
+                print(COLOR_NO_SAMP, end='')
+            print(CLI_STEPS_1[i], end='')
+        print('\n  ', end='')
+        # print bottom row
+        for i in range(hlen):
+            j = i + hlen
+            if self.pattern[j] is not None:
+                print(COLOR_HAS_SAMP, end='')
+            else:
+                print(COLOR_NO_SAMP, end='')
+            print(CLI_STEPS_2[i], end='')
+        print(COLOR_DEFAULT + '\n' * 10 + ' > ', end='')
 
     def cli_quit(self):
         print(RESTORE_CURSOR)
