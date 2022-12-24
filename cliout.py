@@ -72,18 +72,27 @@ def update_fills(sampler: PySampler):
     print('\x1B[8A\r ', end='')
     if sampler.fill1 is not None:
         file = cli_filename(sampler.fill1[0])
-        print(COLOR_FILL_OFF + CLI_FILLS[0] + COLOR_DEFAULT + ' ' + file, end='')
+        if sampler.fill1_on:
+            print(COLOR_FILL_ON, end='')
+        else:
+            print(COLOR_FILL_OFF, end='')
+        print(CLI_FILLS[0] + COLOR_DEFAULT + ' ' + file, end='')
     else:
         print(COLOR_NO_SAMP + CLI_FILLS[0] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
     
     if sampler.fill2 is not None:
         file = cli_filename(sampler.fill2[0])
-        print(' ' + COLOR_FILL_OFF + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + file, end='')
+        if sampler.fill2_on:
+            print(' ' + COLOR_FILL_ON, end='')
+        else:
+            print(' ' + COLOR_FILL_OFF, end='')
+        print(CLI_FILLS[1] + COLOR_DEFAULT + ' ' + file, end='')
     else:
         print(' ' + COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
+    
     print(CLI_FILLS[2], end='')
     # go back to home position
-    print('\n' * 6, end='')
+    print('\n' * 6 + ' > ', end='')
 
 # update pattern steps
 def update_pattern(sample: PySampler):# move cursor up 11 rows
