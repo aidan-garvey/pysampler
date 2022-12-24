@@ -31,7 +31,7 @@ class BeatClock:
     
     def start(self):
         self.started = True
-        self.step = 0
+        self.step = 1 # Using 0 is an off-by-one error, but I can't tell why
         self.pulse = 0
         self.last_time = time.time()
         self.midiport.send(self.start_signal)
