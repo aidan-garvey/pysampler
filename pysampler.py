@@ -1,3 +1,10 @@
+'''
+pysampler.py
+
+This is the main class for the pysampler program. It is responsible for setting
+up output devices and shutting them down; handling keyboard input; and calling
+functions in samplestream.py to play audio.
+'''
 
 import keyboard
 import json

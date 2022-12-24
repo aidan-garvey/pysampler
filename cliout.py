@@ -1,6 +1,8 @@
+'''
+cliout.py
 
-# cliout.py
-# CLI output
+Functions for printing the CLI.
+'''
 
 from pysampler import PySampler
 

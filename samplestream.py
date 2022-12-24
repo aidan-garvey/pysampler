@@ -1,3 +1,15 @@
+'''
+samplestream.py
+
+This class is responsible for the audio output of the program. It opens a
+pyaudio Stream for sending waveform data to a given output device. It keeps one
+Wave_read object for each file that the user can play. When its play function is
+called, it will rewind the Wave_read associated with the filename passed to the
+function.
+
+See this class' callback function for documentation on how sample waveforms are
+combined and sent to the output device.
+'''
 
 import wave
 from array import array
@@ -34,6 +46,7 @@ class SampleStream:
         self.queued_samples = set()
         self.samp_files = dict()
     
+    # add the given file to the samples being played in the callback function
     def play(self, filename):
         # if it's already open, rewind it
         sf = self.samp_files.get(filename)
@@ -45,6 +58,13 @@ class SampleStream:
             self.samp_files[filename] = sf
             self.queued_samples.add(sf)
     
+    # Called by self.stream whenever more frames of audio output are needed.
+    # It combines all samples currently being played by adding their waveform
+    # frames together, and clamping the result to signed 16-bit integers. If no
+    # samples are currently playing, or they are too short for the requested
+    # number of frames (frame_count), the returned array is padded with zeroes.
+    # This is done to ensure pyaudio will not close the stream, which we want to
+    # remain open even if no audio is playing.
     def callback(self, in_data, frame_count, time_info, status):
         # add any queued samples
         self.samples.update(self.queued_samples)

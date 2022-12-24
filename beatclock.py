@@ -1,7 +1,8 @@
 '''
 beatclock.py
 
-Sends clock pulses to output device, can be turned on and off.
+Responisble for MIDI communication with output device. Will send start and stop
+messages, as well as a beat clock signal.
 '''
 
 import time
