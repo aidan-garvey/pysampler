@@ -173,7 +173,7 @@ class PySampler:
 
     def run(self):
         self.online = True
-        cliout.setup()
+        cliout.setup(self)
         keyboard.on_press(self.handle_key)
         while self.online:
             step = self.clock.update()
@@ -263,14 +263,14 @@ class PySampler:
         if event.name == KEY_FILL1:
             keyboard.unhook_all()
             self.fill1 = (self.next_fill, self.fill1[1])
-            cliout.update_fills()
+            cliout.update_fills(self)
             print(CLI_FRESH_PROMPT + 'Select frequency', end='')
             self.fill_selected = 1
             keyboard.on_press(self.fill_freq)
         elif event.name == KEY_FILL2:
             keyboard.unhook_all()
             self.fill2 = (self.next_fill, self.fill2[1])
-            cliout.update_fills()
+            cliout.update_fills(self)
             print(CLI_FRESH_PROMPT + 'Select frequency', end='')
             self.fill_selected = 2
             keyboard.on_press(self.fill_freq)
@@ -340,7 +340,7 @@ class PySampler:
         # select step to place sample on
         if KEY_TO_PAT_INDEX.get(event.name) is not None:
             self.pattern[KEY_TO_PAT_INDEX[event.name]] = self.next_pat
-            cliout.update_pattern()
+            cliout.update_pattern(self)
         # select a different sample
         elif self.taps.get(event.name) is not None:
             self.next_pat = self.taps[event.name]
@@ -364,7 +364,7 @@ class PySampler:
         # select step to remove sample from
         if KEY_TO_PAT_INDEX.get(event.name) is not None:
             self.pattern[KEY_TO_PAT_INDEX[event.name]] = None
-            cliout.update_pattern()
+            cliout.update_pattern(self)
         # exit mode
         elif event.name == KEY_SPACE:
             keyboard.unhook_all()
@@ -406,7 +406,7 @@ class PySampler:
         else:
             self.bank_index = (self.bank_index + 1) % len(self.tap_banks)
         self.load_bank()
-        cliout.update_taps()
+        cliout.update_taps(self)
 
     def shut_down(self):
         self.midiport.close()
