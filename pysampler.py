@@ -155,8 +155,7 @@ class PySampler:
         while self.online:
             step = self.clock.update()
             while self.step != step:
-                if not self.muted:
-                    self.play_step()
+                self.play_step()
                 self.step = (self.step + 1) % MAX_STEPS
             sleep(self.sleep_time)
         keyboard.unhook_all()
@@ -221,8 +220,7 @@ class PySampler:
     def kh_default(self, event: str):
         # play tap sample
         if self.taps.get(event) is not None:
-            if not self.muted:
-                self.stream.play(self.taps[event])
+            self.stream.play(self.taps[event])
         # toggle fill 1
         elif event == KEY_FILL1:
             self.fill1_on = not self.fill1_on
@@ -307,7 +305,7 @@ class PySampler:
                 and self.step % self.fill2[1] == 0:
             self.stream.play(self.fill2[0])
         
-        if self.pattern[self.step] is not None:
+        if not self.muted and self.pattern[self.step] is not None:
             self.stream.play(self.pattern[self.step])
 
     # load self.tap_banks[self.bank_index] into self.taps
