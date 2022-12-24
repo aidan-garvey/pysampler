@@ -117,8 +117,7 @@ def update_pattern(sample: PySampler):# move cursor up 11 rows
     print(COLOR_DEFAULT + '\n' * 10 + ' > ', end='')
 
 def quit():
-    print(RESTORE_CURSOR)
-    print("Exiting...")
+    print(RESTORE_CURSOR + COLOR_DEFAULT + "Exiting...")
 
 # print entire CLI on startup
 def setup(sampler: PySampler):
