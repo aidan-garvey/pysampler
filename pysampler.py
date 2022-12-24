@@ -69,6 +69,9 @@ class PySampler:
     playing: bool
     muted: bool
 
+    # handler function for keys with dynamic functions
+    dynamic_key_handler = None
+
     # list of samples in current pattern
     pattern: list[str] = [None] * MAX_STEPS
 
@@ -91,6 +94,7 @@ class PySampler:
         self.muted = False
         self.sec_per_pulse = (60 / CONFIG['bpm']) / 24
         self.sleep_time = self.sec_per_pulse / 2
+        self.dynamic_key_handler = self.kh_default
 
         self.midiport = None
         devs: list[str] = mido.get_output_names()
@@ -151,41 +155,37 @@ class PySampler:
         while self.online:
             step = self.clock.update()
             while self.step != step:
-                self.play_step()
+                if not self.muted:
+                    self.play_step()
                 self.step = (self.step + 1) % MAX_STEPS
             sleep(self.sleep_time)
         keyboard.unhook_all()
     
+    # handle keys with constant functions, pass others to dynamic key handler
     def handle_key(self, event: keyboard.KeyboardEvent):
-        # backspace so pressed key doesn't show up in program
-        # print('\x08', end='', flush=True)
-        # play tap sample
-        if self.taps.get(event.name) is not None:
-            self.stream.play(self.taps[event.name])
-
-        # toggle fill 1
-        elif event.name == KEY_FILL1:
-            self.fill1_on = not self.fill1_on
-            cliout.update_fills(self)
-
-        # toggle fill 2
-        elif event.name == KEY_FILL2:
-            self.fill2_on = not self.fill2_on
-            cliout.update_fills(self)
-
         # start key
-        elif event.name == KEY_START:
+        if event.name == KEY_START:
             self.step = 0
+            self.playing = True
             self.clock.start()
+            cliout.update_top(self)
 
         # stop key
         elif event.name == KEY_STOP:
+            self.playing = False
             self.clock.stop()
+            cliout.update_top(self)
 
         # shutdown key
         elif event.name == KEY_SHUTDOWN:
             self.clock.stop()
+            self.playing = False
             self.online = False
+
+        # mute key
+        elif event.name == KEY_MUTE:
+            self.muted = not self.muted
+            cliout.update_top(self)
 
         # sample bank switches
         elif event.name == KEY_TAP_LEFT:
@@ -195,160 +195,108 @@ class PySampler:
         
         # fill change button
         elif event.name == KEY_CHANGE_FILLS:
-            keyboard.unhook_all()
             print(FRESH_PROMPT + 'Select sample', end='')
-            keyboard.on_press(self.select_fill)
+            self.dynamic_key_handler = self.kh_select_fill
         
         # pattern add button
         elif event.name == KEY_ADD:
-            keyboard.unhook_all()
             print(FRESH_PROMPT + 'Select sample', end='')
-            keyboard.on_press(self.select_add_sample)
+            self.dynamic_key_handler = self.kh_select_add_sample
         
         # pattern remove button
         elif event.name == KEY_DELETE:
-            keyboard.unhook_all()
             print(FRESH_PROMPT + 'Select steps', end='')
-            keyboard.on_press(self.remove_pattern)
+            self.dynamic_key_handler = self.kh_remove_pattern
 
-    # select a sample from the bank to switch to
-    def select_fill(self, event: keyboard.KeyboardEvent):
-        if self.taps.get(event.name) is not None:
-            keyboard.unhook_all()
-            self.next_fill = self.taps[event.name]
-            print(FRESH_PROMPT + self.next_fill + ', select slot', end='')
-            keyboard.on_press(self.overwrite_fill)
         # exit mode
         elif event.name == KEY_SPACE:
-            keyboard.unhook_all()
             print(FRESH_PROMPT, end='')
-            keyboard.on_press(self.handle_key)
-        # allow switching banks while a sample is being selected
-        elif event.name == KEY_TAP_LEFT:
-            self.change_taps(True)
-        elif event.name == KEY_TAP_RIGHT:
-            self.change_taps(False)
-        # shutdown key
-        elif event.name == KEY_SHUTDOWN:
-            self.clock.stop()
-            self.online = False
+            self.dynamic_key_handler = self.kh_default
+
+        # hand off to dynamic key handler
+        else:
+            self.dynamic_key_handler(event.name)
+
+    # default dynamic key handler (no mode selected)
+    def kh_default(self, event: str):
+        # play tap sample
+        if self.taps.get(event) is not None:
+            if not self.muted:
+                self.stream.play(self.taps[event])
+        # toggle fill 1
+        elif event == KEY_FILL1:
+            self.fill1_on = not self.fill1_on
+            cliout.update_fills(self)
+        # toggle fill 2
+        elif event == KEY_FILL2:
+            self.fill2_on = not self.fill2_on
+            cliout.update_fills(self)
+        
+
+    # select a sample from the bank to switch to
+    def kh_select_fill(self, event: str):
+        if self.taps.get(event) is not None:
+            self.next_fill = self.taps[event]
+            print(FRESH_PROMPT + self.next_fill + ', select slot', end='')
+            self.dynamic_key_handler = self.kh_overwrite_fill
 
     # choose the fill slot to overwrite
-    def overwrite_fill(self, event: keyboard.KeyboardEvent):
-        if event.name == KEY_FILL1:
-            keyboard.unhook_all()
+    def kh_overwrite_fill(self, event: str):
+        if event == KEY_FILL1:
             self.fill1 = (self.next_fill, self.fill1[1])
             cliout.update_fills(self)
             print(FRESH_PROMPT + 'Select frequency', end='')
             self.fill_selected = 1
-            keyboard.on_press(self.fill_freq)
-        elif event.name == KEY_FILL2:
-            keyboard.unhook_all()
+            self.dynamic_key_handler = self.kh_fill_freq
+        elif event == KEY_FILL2:
             self.fill2 = (self.next_fill, self.fill2[1])
             cliout.update_fills(self)
             print(FRESH_PROMPT + 'Select frequency', end='')
             self.fill_selected = 2
-            keyboard.on_press(self.fill_freq)
-        # exit mode
-        elif event.name == KEY_SPACE:
-            keyboard.unhook_all()
-            print(FRESH_PROMPT, end='')
-            keyboard.on_press(self.handle_key)
-        # shutdown key
-        elif event.name == KEY_SHUTDOWN:
-            self.clock.stop()
-            self.online = False
+            self.dynamic_key_handler = self.kh_fill_freq
 
     # choose frequency of fill
     # 0 -> every 16 steps
     # 1 -> every step
     # 2 -> every 2 steps
     # 4 -> every 4 steps, etc.
-    # non-powers of 2 are allowed but the count resets every 16 beats
-    def fill_freq(self, event: keyboard.KeyboardEvent):
-        if event.name == KEY_SPACE:
-            keyboard.unhook_all()
+    # non-powers of 2 are allowed but the count resets every 16 steps
+    def kh_fill_freq(self, event: str):
+        try:
+            amt = int(event)
+            if amt == 0:
+                amt = 16
+            if self.fill_selected == 1:
+                self.fill1 = (self.fill1[0], amt)
+            else:
+                self.fill2 = (self.fill2[0], amt)
             print(FRESH_PROMPT, end='')
-            keyboard.on_press(self.handle_key)
-        # shutdown key
-        elif event.name == KEY_SHUTDOWN:
-            self.clock.stop()
-            self.online = False
-        else:
-            try:
-                amt = int(event.name)
-                if amt == 0:
-                    amt = 16
-                if self.fill_selected == 1:
-                    self.fill1 = (self.fill1[0], amt)
-                else:
-                    self.fill2 = (self.fill2[0], amt)
-                keyboard.unhook_all()
-                print(FRESH_PROMPT, end='')
-                keyboard.on_press(self.handle_key)
-            except:
-                pass
+            self.dynamic_key_handler = self.kh_default
+        except:
+            pass
 
-    def select_add_sample(self, event: keyboard.KeyboardEvent):
+    def kh_select_add_sample(self, event: str):
         # select sample to place
-        if self.taps.get(event.name) is not None:
-            keyboard.unhook_all()
-            self.next_pat = self.taps[event.name]
+        if self.taps.get(event) is not None:
+            self.next_pat = self.taps[event]
             print(FRESH_PROMPT + self.next_pat + ', select steps', end='')
-            keyboard.on_press(self.place_in_pattern)
-        # allow switching banks while a sample is being selected
-        elif event.name == KEY_TAP_LEFT:
-            self.change_taps(True)
-        elif event.name == KEY_TAP_RIGHT:
-            self.change_taps(False)
-        # exit mode
-        elif event.name == KEY_SPACE:
-            keyboard.unhook_all()
-            print(FRESH_PROMPT, end='')
-            keyboard.on_press(self.handle_key)
-        # shut down
-        elif event.name == KEY_SHUTDOWN:
-            self.clock.stop()
-            self.online = False
+            self.dynamic_key_handler = self.kh_place_in_pattern
 
-    def place_in_pattern(self, event: keyboard.KeyboardEvent):
+    def kh_place_in_pattern(self, event: str):
         # select step to place sample on
-        if KEY_TO_PAT_INDEX.get(event.name) is not None:
-            self.pattern[KEY_TO_PAT_INDEX[event.name]] = self.next_pat
+        if KEY_TO_PAT_INDEX.get(event) is not None:
+            self.pattern[KEY_TO_PAT_INDEX[event]] = self.next_pat
             cliout.update_pattern(self)
         # select a different sample
-        elif self.taps.get(event.name) is not None:
-            self.next_pat = self.taps[event.name]
+        elif self.taps.get(event) is not None:
+            self.next_pat = self.taps[event]
             print(FRESH_PROMPT + self.next_pat + ', select steps', end='')
-        # allow switching banks while a sample is being selected
-        elif event.name == KEY_TAP_LEFT:
-            self.change_taps(True)
-        elif event.name == KEY_TAP_RIGHT:
-            self.change_taps(False)
-        # exit mode
-        elif event.name == KEY_SPACE:
-            keyboard.unhook_all()
-            print(FRESH_PROMPT, end='')
-            keyboard.on_press(self.handle_key)
-        # shut down
-        elif event.name == KEY_SHUTDOWN:
-            self.clock.stop()
-            self.online = False
 
-    def remove_pattern(self, event: keyboard.KeyboardEvent):
+    def kh_remove_pattern(self, event: str):
         # select step to remove sample from
-        if KEY_TO_PAT_INDEX.get(event.name) is not None:
-            self.pattern[KEY_TO_PAT_INDEX[event.name]] = None
+        if KEY_TO_PAT_INDEX.get(event) is not None:
+            self.pattern[KEY_TO_PAT_INDEX[event]] = None
             cliout.update_pattern(self)
-        # exit mode
-        elif event.name == KEY_SPACE:
-            keyboard.unhook_all()
-            print(FRESH_PROMPT, end='')
-            keyboard.on_press(self.handle_key)
-        # shut down
-        elif event.name == KEY_SHUTDOWN:
-            self.clock.stop()
-            self.online = False
 
     def play_step(self):
         if self.fill1_on and self.fill1 is not None \
