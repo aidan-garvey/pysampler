@@ -26,8 +26,9 @@ KEY_CHANGE_FILLS = 'c'
 KEY_ADD = 'z'
 KEY_DELETE = 'x'
 KEY_SPACE = 'space'
+KEY_MUTE = 'm'
 
-TAP_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k']
+TAP_KEYS = ('a', 's', 'd', 'f', 'g', 'h', 'j', 'k')
 FRESH_PROMPT = '\r' + ' ' * 40 + '\r > '
 
 KEY_TO_PAT_INDEX: dict[str, int] = {
@@ -54,14 +55,19 @@ KEY_TO_PAT_INDEX: dict[str, int] = {
 
 class PySampler:
     audio = PyAudio()
-    sec_per_pulse: float
-    sleep_time: float
     midiport: mido.ports.BaseOutput
     audiodev: int
+
+    stream: SampleStream
     clock: BeatClock
+
+    sec_per_pulse: float
+    sleep_time: float
+
     step: int
     online: bool
-    stream: SampleStream
+    playing: bool
+    muted: bool
 
     # list of samples in current pattern
     pattern: list[str] = [None] * MAX_STEPS
@@ -81,6 +87,8 @@ class PySampler:
 
     def __init__(self, preload = None):
         self.online = True
+        self.playing = False
+        self.muted = False
         self.sec_per_pulse = (60 / CONFIG['bpm']) / 24
         self.sleep_time = self.sec_per_pulse / 2
 
@@ -108,7 +116,7 @@ class PySampler:
             exit()
         else:
             print('\n' * 40, "Using audio device",
-                    self.audio.get_device_info_by_index(self.audiodev)['name'])
+                    cliout.format_dev_name(self.audio.get_device_info_by_index(self.audiodev)))
 
         self.stream = SampleStream(self.audio, self.audiodev)
         self.clock = BeatClock(self.sec_per_pulse, self.midiport)

@@ -6,7 +6,7 @@ from pysampler import PySampler
 
 # these strings are used to generate the following CLI:
 '''
- [-] Stop    [+] Start    [\] Shut Down
+ [-] Stop    [+] Start    [M] Mute    [\] Shut Down
 
  [1][2][3][4][5][6][7][8]     [A] Add to pattern
   [Q][W][E][R][T][Y][U][I]    [D] Delete from pattern
@@ -20,15 +20,17 @@ from pysampler import PySampler
 
  > 
 '''
-CLI_TOP = "\n [-] Stop    [+] Start    [\] Shut Down\n\n "
+
+CLI_TOP_KEYS = ('[-]', '[+]', '[M]', '[\\]')
+CLI_TOP_LABELS = ('Stop', 'Start', 'Mute', 'Shut Down')
 CLI_STEPS_1 = [f'[{x}]' for x in range(1, 9)]
 CLI_STEPS_2 = [f'[{x}]' for x in ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I']]
 CLI_ADD = "     [Z] Add to pattern\n  "
 CLI_REMOVE = "    [X] Delete from pattern\n\n "
-CLI_FILLS = ['[:]', '["]', ' [C] Change\n\n']
-CLI_TAP_KEYS = ['a', 'g', 's', 'h', 'd', 'j', 'f', 'k']
+CLI_FILLS = ('[:]', '["]', ' [C] Change\n\n')
+CLI_TAP_KEYS = ('a', 'g', 's', 'h', 'd', 'j', 'f', 'k')
 CLI_TAPS = {f'{x}' : f'[{x.upper()}]' for x in CLI_TAP_KEYS}
-CLI_ARROWS = [' ' * 14 + '[<] ', ' [>]']
+CLI_ARROWS = (' ' * 14 + '[<] ', ' [>]')
 CLI_EMPTY_FILE = '.' * 16
 CLI_FRESH_PROMPT = '\r' + ' ' * 40 + '\r > '
 
@@ -39,6 +41,9 @@ COLOR_NO_SAMP = '\x1B[33;40m'
 COLOR_HAS_SAMP = '\x1B[30;43m'
 COLOR_FILL_ON = '\x1B[30;46m'
 COLOR_FILL_OFF = '\x1B[30;41m'
+COLOR_STOPPED = '\x1B[31m'
+COLOR_PLAYING = '\x1B[36m'
+COLOR_MUTED = '\x1B[33m'
 
 # truncate filename to 16 chars, or pad to 16 chars with trailing spaces
 def cli_filename(name: str) -> str:
@@ -49,6 +54,36 @@ def cli_filename(name: str) -> str:
         return name[0:15] + '~'
     else:
         return name.ljust(16)
+
+# get device's name, remove the "(hw:x,y)", and return it
+def format_dev_name(info: dict) -> str:
+    name: str = info['name']
+    hwindex = name.find('(hw:')
+    if hwindex > 0:
+        name = name[0:hwindex]
+    return name
+
+def update_top(sampler: PySampler):
+    # move cursor up 13 rows
+    print('\x1B[13A\r ', end='')
+
+    # [-] Stop
+    if not sampler.playing:
+        print(COLOR_STOPPED, end='')
+    print(CLI_TOP_KEYS[0] + COLOR_DEFAULT + ' ' + CLI_TOP_LABELS[0] + ' ' * 4, end='')
+    # [+] Start
+    if sampler.playing:
+        print(COLOR_PLAYING, end='')
+    print(CLI_TOP_KEYS[1] + COLOR_DEFAULT + ' ' + CLI_TOP_LABELS[1] + ' ' * 4, end='')
+    # [M] Mute
+    if sampler.muted:
+        print(COLOR_MUTED, end='')
+    print(CLI_TOP_KEYS[2] + COLOR_DEFAULT + ' ' + CLI_TOP_LABELS[2] + ' ' * 4, end='')
+    # [\] Shut Down
+    print(CLI_TOP_KEYS[3] + ' ' + CLI_TOP_LABELS[3], end='')
+
+    # return to home position
+    print('\n' * 13 + ' > ', end='')
 
 # update filenames displayed in sample bank
 def update_taps(sampler: PySampler):
@@ -95,7 +130,8 @@ def update_fills(sampler: PySampler):
     print('\n' * 6 + ' > ', end='')
 
 # update pattern steps
-def update_pattern(sample: PySampler):# move cursor up 11 rows
+def update_pattern(sample: PySampler):
+    # move cursor up 11 rows
     print('\x1B[11A\r ', end='')
     hlen = len(sample.pattern) // 2
     # print top row
@@ -121,7 +157,13 @@ def quit():
 
 # print entire CLI on startup
 def setup(sampler: PySampler):
-    print(HIDE_CURSOR, CLI_TOP, end='')
+    print(HIDE_CURSOR + '\n ', end='')
+    # assume sampler is stopped
+    print(COLOR_STOPPED + CLI_TOP_KEYS[0] + COLOR_DEFAULT + ' ' + CLI_TOP_LABELS[0] + ' ' * 4, end='')
+    print(CLI_TOP_KEYS[1] + ' ' + CLI_TOP_LABELS[1] + ' ' * 4, end='')
+    # assume sampler is not muted
+    print(CLI_TOP_KEYS[2] + ' ' + CLI_TOP_LABELS[2] + ' ' * 4, end='')
+    print(CLI_TOP_KEYS[3] + ' ' + CLI_TOP_LABELS[3] + '\n\n ', end='')
 
     for i in range(len(sampler.pattern) // 2):
         if sampler.pattern[i] is not None:
