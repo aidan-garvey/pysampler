@@ -6,6 +6,7 @@ from pyaudio import PyAudio
 from time import sleep
 from sys import argv
 
+import cliout
 from beatclock import BeatClock
 from samplestream import SampleStream
 
@@ -172,7 +173,7 @@ class PySampler:
 
     def run(self):
         self.online = True
-        self.cli_setup()
+        cliout.setup()
         keyboard.on_press(self.handle_key)
         while self.online:
             step = self.clock.update()
@@ -213,9 +214,9 @@ class PySampler:
 
         # sample bank switches
         elif event.name == KEY_TAP_LEFT:
-            self.cli_change_taps(True)
+            self.change_taps(True)
         elif event.name == KEY_TAP_RIGHT:
-            self.cli_change_taps(False)
+            self.change_taps(False)
         
         # fill change button
         elif event.name == KEY_CHANGE_FILLS:
@@ -249,9 +250,9 @@ class PySampler:
             keyboard.on_press(self.handle_key)
         # allow switching banks while a sample is being selected
         elif event.name == KEY_TAP_LEFT:
-            self.cli_change_taps(True)
+            self.change_taps(True)
         elif event.name == KEY_TAP_RIGHT:
-            self.cli_change_taps(False)
+            self.change_taps(False)
         # shutdown key
         elif event.name == KEY_SHUTDOWN:
             self.clock.stop()
@@ -262,14 +263,14 @@ class PySampler:
         if event.name == KEY_FILL1:
             keyboard.unhook_all()
             self.fill1 = (self.next_fill, self.fill1[1])
-            self.cli_fills()
+            cliout.update_fills()
             print(CLI_FRESH_PROMPT + 'Select frequency', end='')
             self.fill_selected = 1
             keyboard.on_press(self.fill_freq)
         elif event.name == KEY_FILL2:
             keyboard.unhook_all()
             self.fill2 = (self.next_fill, self.fill2[1])
-            self.cli_fills()
+            cliout.update_fills()
             print(CLI_FRESH_PROMPT + 'Select frequency', end='')
             self.fill_selected = 2
             keyboard.on_press(self.fill_freq)
@@ -322,9 +323,9 @@ class PySampler:
             keyboard.on_press(self.place_in_pattern)
         # allow switching banks while a sample is being selected
         elif event.name == KEY_TAP_LEFT:
-            self.cli_change_taps(True)
+            self.change_taps(True)
         elif event.name == KEY_TAP_RIGHT:
-            self.cli_change_taps(False)
+            self.change_taps(False)
         # exit mode
         elif event.name == KEY_SPACE:
             keyboard.unhook_all()
@@ -339,16 +340,16 @@ class PySampler:
         # select step to place sample on
         if KEY_TO_PAT_INDEX.get(event.name) is not None:
             self.pattern[KEY_TO_PAT_INDEX[event.name]] = self.next_pat
-            self.cli_pattern()
+            cliout.update_pattern()
         # select a different sample
         elif self.taps.get(event.name) is not None:
             self.next_pat = self.taps[event.name]
             print(CLI_FRESH_PROMPT + self.next_pat + ', select steps', end='')
         # allow switching banks while a sample is being selected
         elif event.name == KEY_TAP_LEFT:
-            self.cli_change_taps(True)
+            self.change_taps(True)
         elif event.name == KEY_TAP_RIGHT:
-            self.cli_change_taps(False)
+            self.change_taps(False)
         # exit mode
         elif event.name == KEY_SPACE:
             keyboard.unhook_all()
@@ -363,7 +364,7 @@ class PySampler:
         # select step to remove sample from
         if KEY_TO_PAT_INDEX.get(event.name) is not None:
             self.pattern[KEY_TO_PAT_INDEX[event.name]] = None
-            self.cli_pattern()
+            cliout.update_pattern()
         # exit mode
         elif event.name == KEY_SPACE:
             keyboard.unhook_all()
@@ -397,63 +398,7 @@ class PySampler:
         for i in range(len(bank), len(self.taps)):
             self.taps[TAP_KEYS_KBD_ORDER[i]] = None
 
-    # print entire CLI
-    def cli_setup(self):
-        print(HIDE_CURSOR, CLI_TOP, end='')
-
-        for i in range(len(self.pattern) // 2):
-            if self.pattern[i] is not None:
-                print(COLOR_HAS_SAMP, end='')
-            else:
-                print(COLOR_NO_SAMP, end='')
-            print(CLI_STEPS_1[i], end='')
-        print(COLOR_DEFAULT + CLI_ADD, end='')
-
-        for i in range(len(self.pattern) // 2):
-            j = i + len(self.pattern) // 2
-            if self.pattern[j] is not None:
-                print(COLOR_HAS_SAMP, end='')
-            else:
-                print(COLOR_NO_SAMP, end='')
-            print(CLI_STEPS_2[i], end='')
-        print(COLOR_DEFAULT + CLI_REMOVE, end='')
-
-        if self.fill1 is not None:
-            file = self.cli_filename(self.fill1[0])
-            print(COLOR_FILL_OFF + CLI_FILLS[0] + COLOR_DEFAULT + ' ' + file, end='')
-        else:
-            print(COLOR_NO_SAMP + CLI_FILLS[0] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
-        
-        if self.fill2 is not None:
-            file = self.cli_filename(self.fill2[0])
-            print(' ' + COLOR_FILL_OFF + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + file, end='')
-        else:
-            print(' ' + COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
-        print(CLI_FILLS[2], end='')
-
-        for ti in range(len(CLI_TAP_KEYS)):
-            t = CLI_TAP_KEYS[ti]
-            if self.taps.get(t) is not None:
-                file = self.cli_filename(self.taps[t])
-                print(' ' + COLOR_HAS_SAMP + CLI_TAPS[t] + COLOR_DEFAULT + ' ' + file, end='')
-            else:
-                print(' ' + COLOR_NO_SAMP + CLI_TAPS[t] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
-            if ti % 2 == 1:
-                print()
-        
-        print(CLI_ARROWS[0] + f'{self.bank_index + 1 :03}/{len(self.tap_banks) :03}' + CLI_ARROWS[1] + '\n\n\n\x1B[1A > ', end='')
-
-    # truncate filename to 16 chars / pad to 16 chars with trailing spaces
-    def cli_filename(self, name: str) -> str:
-        l = len(name)
-        if l == 16:
-            return name
-        elif l > 16:
-            return name[0:15] + '~'
-        else:
-            return name.ljust(16)
-
-    def cli_change_taps(self, left: bool):
+    def change_taps(self, left: bool):
         if left:
             self.bank_index -= 1
             if self.bank_index < 0:
@@ -461,71 +406,12 @@ class PySampler:
         else:
             self.bank_index = (self.bank_index + 1) % len(self.tap_banks)
         self.load_bank()
-        self.cli_taps()
+        cliout.update_taps()
 
-    def cli_fills(self):
-        # move cursor up 8 rows
-        print('\x1B[8A\r ', end='')
-        if self.fill1 is not None:
-            file = self.cli_filename(self.fill1[0])
-            print(COLOR_FILL_OFF + CLI_FILLS[0] + COLOR_DEFAULT + ' ' + file, end='')
-        else:
-            print(COLOR_NO_SAMP + CLI_FILLS[0] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
-        
-        if self.fill2 is not None:
-            file = self.cli_filename(self.fill2[0])
-            print(' ' + COLOR_FILL_OFF + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + file, end='')
-        else:
-            print(' ' + COLOR_NO_SAMP + CLI_FILLS[1] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
-        print(CLI_FILLS[2], end='')
-        # go back to home position
-        print('\n' * 6, end='')
-
-    def cli_taps(self):
-        # move cursor up 6 rows
-        print('\x1B[6A\r', end='')
-        for ti in range(len(CLI_TAP_KEYS)):
-            t = CLI_TAP_KEYS[ti]
-            if self.taps.get(t) is not None:
-                file = self.cli_filename(self.taps[t])
-                print(' ' + COLOR_HAS_SAMP + CLI_TAPS[t] + COLOR_DEFAULT + ' ' + file, end='')
-            else:
-                print(' ' + COLOR_NO_SAMP + CLI_TAPS[t] + COLOR_DEFAULT + ' ' + CLI_EMPTY_FILE, end='')
-            if ti % 2 == 1:
-                print()
-        
-        print(CLI_ARROWS[0] + f'{self.bank_index + 1 :03}/{len(self.tap_banks) :03}' + CLI_ARROWS[1] + '\n\n > ', end='')
-
-    def cli_pattern(self):
-        # move cursor up 11 rows
-        print('\x1B[11A\r ', end='')
-        hlen = len(self.pattern) // 2
-        # print top row
-        for i in range(hlen):
-            if self.pattern[i] is not None:
-                print(COLOR_HAS_SAMP, end='')
-            else:
-                print(COLOR_NO_SAMP, end='')
-            print(CLI_STEPS_1[i], end='')
-        print(COLOR_DEFAULT + '\n  ', end='')
-        # print bottom row
-        for i in range(hlen):
-            j = i + hlen
-            if self.pattern[j] is not None:
-                print(COLOR_HAS_SAMP, end='')
-            else:
-                print(COLOR_NO_SAMP, end='')
-            print(CLI_STEPS_2[i], end='')
-        print(COLOR_DEFAULT + '\n' * 10 + ' > ', end='')
-
-    def cli_quit(self):
-        print(RESTORE_CURSOR)
-        print("Exiting...")
-    
     def shut_down(self):
         self.midiport.close()
         self.audio.terminate()
-        self.cli_quit()
+        cliout.quit()
 
 if __name__ == "__main__":
     mido.set_backend(BACKEND)
