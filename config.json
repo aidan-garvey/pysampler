@@ -8,12 +8,8 @@
         [
             "rimshot-1.wav",
             "rimshot-2.wav",
-            "kick-1.wav"
-        ],
-        [
-            "rimshot-2.wav",
             "kick-1.wav",
-            "cymbal-1.wav"
+            "hihat-1.wav"
         ],
         [
             "d-.wav",
