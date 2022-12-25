@@ -95,7 +95,7 @@ class PySampler:
     tap_banks: list[list[str]] = []
     bank_index = 0
 
-    def __init__(self, preload = None):
+    def __init__(self):
         self.online = True
         self.playing = False
         self.muted = False
@@ -133,27 +133,24 @@ class PySampler:
         self.clock = BeatClock(self.sec_per_pulse, self.midiport)
         self.step = 0
 
-        if preload is not None:
-            preset: dict = json.loads(open(preload, 'r').read())
+        if CONFIG.get('pattern') is not None:
+            ptn: str = CONFIG['pattern']
+            for i in range(min(MAX_STEPS, len(ptn))):
+                self.pattern[i] = ptn[i]
 
-            if preset.get('pattern') is not None:
-                ptn: str = preset['pattern']
-                for i in range(min(MAX_STEPS, len(ptn))):
-                    self.pattern[i] = ptn[i]
+        if CONFIG.get('fill1') is not None:
+            self.fill1 = (CONFIG['fill1'][0], CONFIG['fill1'][1])
 
-            if preset.get('fill1') is not None:
-                self.fill1 = (preset['fill1'][0], preset['fill1'][1])
+        if CONFIG.get('fill2') is not None:
+            self.fill2 = (CONFIG['fill2'][0], CONFIG['fill2'][1])
 
-            if preset.get('fill2') is not None:
-                self.fill2 = (preset['fill2'][0], preset['fill2'][1])
-
-            if preset.get('tap_banks') is not None:
-                self.tap_banks = preset['tap_banks']
-                if len(self.tap_banks) > 999:
-                    print("Error: too many sample banks! You must have less than 1000 banks of up to 8 samples each.")
-                    exit()
-                self.bank_index = 0
-                self.load_bank()
+        if CONFIG.get('tap_banks') is not None:
+            self.tap_banks = CONFIG['tap_banks']
+            if len(self.tap_banks) > 999:
+                print("Error: too many sample banks! You must have less than 1000 banks of up to 8 samples each.")
+                exit()
+            self.bank_index = 0
+            self.load_bank()
 
     def run(self):
         self.online = True
@@ -343,11 +340,7 @@ class PySampler:
 
 if __name__ == "__main__":
     mido.set_backend(BACKEND)
-    s: PySampler
-    if len(argv) > 1:
-        s = PySampler(argv[1])
-    else:
-        s = PySampler()
+    s = PySampler()
     
     try:
         s.run()

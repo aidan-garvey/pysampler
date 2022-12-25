@@ -1,4 +1,29 @@
 {
     "device":"T-8",
-    "bpm":140
+    "bpm":140,
+    "pattern": [],
+    "fill1": ["rimshot-2.wav", 1],
+    "fill2": ["kick-1.wav", 4],
+    "tap_banks": [
+        [
+            "rimshot-1.wav",
+            "rimshot-2.wav",
+            "kick-1.wav"
+        ],
+        [
+            "rimshot-2.wav",
+            "kick-1.wav",
+            "cymbal-1.wav"
+        ],
+        [
+            "d-.wav",
+            "d-d-.wav",
+            "down.wav",
+            "blackout.wav",
+            "mic.wav",
+            "rock.wav",
+            "go_down_wto.wav",
+            "down_wtob.wav"
+        ]
+    ]
 }
