@@ -2,16 +2,16 @@
     "device":"T-8",
     "bpm":140,
     "pattern": [],
-    "fill1": ["rimshot-2.wav", 1],
+    "fill1": ["rimshot-low.wav", 1],
     "fill2": ["hihat-1.wav", 1],
     "tap_banks": [
         [
-            "rimshot-1.wav",
+            "beat_up.wav",
+            "beat_down.wav",
+            "rimshot-low.wav",
             "rimshot-2.wav",
             "kick-1.wav",
-            "hihat-1.wav",
-            "beat_up.wav",
-            "beat_down.wav"
+            "hihat-1.wav"
         ],
         [
             "d-.wav",
