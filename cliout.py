@@ -47,15 +47,18 @@ COLOR_STOPPED = '\x1B[31m'
 COLOR_PLAYING = '\x1B[36m'
 COLOR_MUTED = '\x1B[33m'
 
-# truncate filename to 16 chars, or pad to 16 chars with trailing spaces
+# remove leading directory names and file extension from filename, then either
+# truncate to 16 chars or pad to 16 chars with trailing spaces
 def cli_filename(name: str) -> str:
-    l = len(name)
+    short_name = name[name.rfind('/') + 1 : name.rfind('.')]
+
+    l = len(short_name)
     if l == 16:
-        return name
+        return short_name
     elif l > 16:
-        return name[0:15] + '~'
+        return short_name[0:15] + '~'
     else:
-        return name.ljust(16)
+        return short_name.ljust(16)
 
 # get device's name, remove the "(hw:x,y)", and return it
 def format_dev_name(info: dict) -> str:

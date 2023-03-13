@@ -126,6 +126,7 @@ class PySampler:
             print("Error: could not find audio output device")
             exit()
         else:
+            # new lines are printed due to ALSA lib spam
             print('\n' * 40, "Using audio device",
                     cliout.format_dev_name(self.audio.get_device_info_by_index(self.audiodev)))
 
