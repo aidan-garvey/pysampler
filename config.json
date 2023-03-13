@@ -2,8 +2,8 @@
     "device":"T-8",
     "bpm":140,
     "pattern": [],
-    "fill1": ["rimshot-low.wav", 1],
-    "fill2": ["hihat-1.wav", 1],
+    "fill1": ["rhythm/rimshot-low.wav", 1],
+    "fill2": ["t8/m-hihat.wav", 1],
     "tap_banks": [
         [
             "scratches/beat_up.wav",
