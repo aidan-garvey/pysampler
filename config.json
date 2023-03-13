@@ -6,24 +6,32 @@
     "fill2": ["hihat-1.wav", 1],
     "tap_banks": [
         [
-            "beat_up.wav",
-            "beat_down.wav",
-            "beat_up_2.wav",
-            "beat_down_2.wav",
-            "rimshot-low.wav",
-            "rimshot-2.wav",
-            "kick-1.wav",
-            "hihat-1.wav"
+            "scratches/beat_up.wav",
+            "scratches/beat_down.wav",
+            "scratches/beat_up_2.wav",
+            "scratches/beat_down_2.wav",
+            "rhythm/rimshot-low.wav",
+            "rhythm/rimshot-2.wav",
+            "rhythm/kick-1.wav",
+            "rhythm/hihat-1.wav"
         ],
         [
-            "d-.wav",
-            "d-d-.wav",
-            "down.wav",
-            "blackout.wav",
-            "mic.wav",
-            "rock.wav",
-            "go_down_wto.wav",
-            "down_wtob.wav"
+            "epmd/d-.wav",
+            "epmd/d-d-.wav",
+            "epmd/down.wav",
+            "epmd/blackout.wav",
+            "epmd/mic.wav",
+            "epmd/rock.wav",
+            "epmd/go_down_wto.wav",
+            "epmd/down_wtob.wav"
+        ],
+        [
+            "t8/bass-drum.wav",
+            "t8/snare.wav",
+            "t8/hand-clap.wav",
+            "t8/c-hihat.wav",
+            "t8/m-hihat.wav",
+            "t8/o-hihat.wav"
         ]
     ]
 }
